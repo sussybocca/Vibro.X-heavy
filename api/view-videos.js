@@ -12,7 +12,9 @@ export default async function handler(req, res) {
     const cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : {};
     const sessionToken = cookies['__Host-session_secure'];
 
-    if (!sessionToken) return res.status(401).json({ error: 'Not authenticated' });
+    if (!sessionToken) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
 
     const { data: session } = await supabase
       .from('sessions')
@@ -36,7 +38,6 @@ export default async function handler(req, res) {
     // 3️⃣ Build response
     const result = await Promise.all(
       files.map(async (file) => {
-
         const { data: video } = await supabase
           .from('videos')
           .select('id, user_id, created_at, cover_url, title, description, video_url')
@@ -53,11 +54,22 @@ export default async function handler(req, res) {
 
         const likes = votes?.length || 0;
 
-        const videoUrl = (await supabase.storage.from('videos')
-          .createSignedUrl(video.video_url, 3600)).data?.signedUrl || null;
+        // 🛡️ SAFE SIGNED URL GENERATION (this was crashing your app)
+        let videoUrl = null;
+        if (video.video_url) {
+          const { data } = await supabase.storage
+            .from('videos')
+            .createSignedUrl(video.video_url, 3600);
+          videoUrl = data?.signedUrl || null;
+        }
 
-        const coverUrl = (await supabase.storage.from('covers')
-          .createSignedUrl(video.cover_url, 3600)).data?.signedUrl || null;
+        let coverUrl = null;
+        if (video.cover_url) {
+          const { data } = await supabase.storage
+            .from('covers')
+            .createSignedUrl(video.cover_url, 3600);
+          coverUrl = data?.signedUrl || null;
+        }
 
         const { data: user } = await supabase
           .from('users')
@@ -106,7 +118,7 @@ export default async function handler(req, res) {
 
     res.status(200).json(result.filter(Boolean));
   } catch (err) {
-    console.error(err);
+    console.error('Video API crash:', err);
     res.status(500).json({ error: err.message });
   }
 }
