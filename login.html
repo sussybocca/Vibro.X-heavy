@@ -1,48 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Login</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/logo.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/assets/logo.png">
-  <link href="/styles.css" rel="stylesheet">
-  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+<meta charset="UTF-8">
+<title>Login - Vibro</title>
+<link rel="icon" type="image/x-icon" href="/icon/Vibro.ico?v=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  /* Basic reset */
+  * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
+  body { display:flex; justify-content:center; align-items:center; min-height:100vh; background:#121212; color:#fff; }
+
+  /* Card container */
+  .login-card { background:#1f1f1f; padding:2rem; border-radius:16px; width:100%; max-width:400px; box-shadow:0 8px 25px rgba(0,0,0,0.7); }
+  .login-card h1 { text-align:center; font-size:1.8rem; margin-bottom:1.5rem; color:#fff; }
+  .logo { display:block; margin:0 auto 1rem auto; width:80px; height:80px; }
+
+  /* Inputs and buttons */
+  input[type="email"], input[type="password"], input[type="text"] { 
+    width:100%; padding:0.75rem 1rem; margin-bottom:1rem; border:none; border-radius:8px; background:#2a2a2a; color:#fff; font-size:1rem; 
+  }
+  input::placeholder { color:#888; }
+
+  .checkbox-container { display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; font-size:0.9rem; }
+  .checkbox-container a { color:#4ea1ff; text-decoration:underline; }
+
+  button { width:100%; padding:0.75rem; border:none; border-radius:8px; font-weight:bold; font-size:1rem; cursor:pointer; transition:0.3s; }
+  .btn-primary { background:#0077cc; color:#fff; margin-bottom:0.5rem; }
+  .btn-primary:hover { background:#005fa3; }
+  .btn-outline { background:none; border:2px solid #0077cc; color:#0077cc; margin-bottom:0.5rem; }
+  .btn-outline:hover { background:#0077cc; color:#fff; }
+
+  #verifySection { display:none; margin-top:1rem; }
+  #output { margin-top:1rem; font-size:0.9rem; color:#ff6b6b; text-align:center; }
+
+  .h-captcha { margin-bottom:1rem; display:flex; justify-content:center; }
+</style>
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body>
 
-<div class="card w-full max-w-md shadow-xl p-6 bg-white flex flex-col space-y-4">
-  <div class="flex items-center space-x-4">
-    <a href="/index.html"><img src="/assets/logo.png" alt="Logo" class="h-16 cursor-pointer"></a>
-    <h1 class="text-2xl font-bold">Login</h1>
+<div class="login-card">
+  <img src="/icon/Vibro.ico?v=1" alt="Vibro Logo" class="logo">
+  <h1>Login</h1>
+
+  <input type="email" id="email" placeholder="Email" required>
+  <input type="password" id="password" placeholder="Password" required>
+
+  <div class="checkbox-container">
+    <input type="checkbox" id="rememberMe">
+    <label for="rememberMe">Remember Me</label>
   </div>
 
-  <div class="space-y-3">
-    <input type="email" id="email" placeholder="Email" class="input input-bordered w-full" required>
-    <input type="password" id="password" placeholder="Password" class="input input-bordered w-full" required>
-
-    <label class="flex items-center space-x-2">
-      <input type="checkbox" id="rememberMe" class="checkbox">
-      <span>Remember Me</span>
-    </label>
-
-    <label class="flex items-center space-x-2 text-sm">
-      <input type="checkbox" id="acceptTerms" class="checkbox">
-      <span>I agree to the <a href="/terms.html" class="text-blue-500 underline" target="_blank">Terms of Service</a></span>
-    </label>
-
-    <div class="h-captcha" data-sitekey="2b1cc900-c846-40e8-bf32-dbeeeec2d1c0"></div>
-
-    <button id="loginBtn" class="btn btn-primary w-full">Login</button>
-    <button id="googleBtn" class="btn btn-outline w-full">Login with Google</button>
+  <div class="checkbox-container">
+    <input type="checkbox" id="acceptTerms">
+    <label for="acceptTerms">I agree to the <a href="/terms.html" target="_blank">Terms of Service</a></label>
   </div>
 
-  <div id="verifySection" class="mt-4 hidden">
-    <p class="mb-2 text-sm">We sent a verification code to your email. Enter it below:</p>
-    <input type="text" id="verificationCode" placeholder="Verification code" class="input input-bordered w-full mb-2">
-    <button id="verifyBtn" class="btn btn-success w-full">Verify & Continue</button>
+  <div class="h-captcha" data-sitekey="2b1cc900-c846-40e8-bf32-dbeeeec2d1c0"></div>
+
+  <button id="loginBtn" class="btn-primary">Login</button>
+  <button id="googleBtn" class="btn-outline">Login with Google</button>
+
+  <div id="verifySection">
+    <p style="margin-bottom:0.5rem; font-size:0.9rem;">Enter verification code sent to your email:</p>
+    <input type="text" id="verificationCode" placeholder="Verification code">
+    <button id="verifyBtn" class="btn-primary" style="margin-top:0.5rem;">Verify & Continue</button>
   </div>
 
-  <div id="output" class="mt-2 text-red-500 text-sm"></div>
+  <div id="output"></div>
 </div>
 
 <script>
@@ -54,7 +79,7 @@ function getFingerprint() {
   return navigator.userAgent + navigator.language + screen.width + screen.height;
 }
 
-// Email/password login
+// Login
 document.getElementById('loginBtn').addEventListener('click', async () => {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value.trim();
@@ -64,52 +89,51 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   if (!acceptTerms) { output.textContent = "You must agree to the Terms of Service."; return; }
   const captcha_token = hcaptcha.getResponse();
   if (!captcha_token) { output.textContent = "Please complete the CAPTCHA."; return; }
-  if (!email || !password) { output.textContent = "Please enter both email and password."; return; }
+  if (!email || !password) { output.textContent = "Enter both email and password."; return; }
 
   const fingerprint = getFingerprint();
   try {
-    const res = await fetch('/api/login', { // updated for Vercel
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, remember_me, captcha_token, fingerprint, accepted_terms: true })
+    const res = await fetch('/api/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password, remember_me, captcha_token, fingerprint, accepted_terms:true })
     });
     const data = await res.json();
     if (data.verification_required) {
-      output.textContent = data.message || "Verification code sent to email.";
-      pendingLoginData = { email, password, remember_me, fingerprint, accepted_terms: true };
-      verifySection.classList.remove('hidden');
+      output.textContent = data.message || "Verification code sent.";
+      pendingLoginData = { email, password, remember_me, fingerprint, accepted_terms:true };
+      verifySection.style.display = 'block';
     } else if (data.success) {
       output.textContent = data.message || "Login successful!";
-      setTimeout(() => { window.location.href = '/profile.html?email=' + encodeURIComponent(email); }, 500);
+      setTimeout(()=>window.location.href='/profile.html?email='+encodeURIComponent(email),500);
     } else if (data.redirect) window.location.href = data.redirect;
     else output.textContent = `Error: ${data.error || 'Unknown error'}`;
-  } catch (err) { console.error(err); output.textContent = 'Error: Could not reach login server'; }
+  } catch(err) { output.textContent = 'Error: Could not reach login server'; console.error(err); }
 });
 
 // Verification
 document.getElementById('verifyBtn').addEventListener('click', async () => {
   if (!pendingLoginData) return;
-  const verification_code = document.getElementById('verificationCode').value.trim();
-  if (!verification_code) { output.textContent = "Enter the verification code."; return; }
+  const code = document.getElementById('verificationCode').value.trim();
+  if (!code) { output.textContent="Enter the verification code."; return; }
 
   try {
     const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...pendingLoginData, verification_code })
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({...pendingLoginData, verification_code:code})
     });
     const data = await res.json();
     if (data.success) {
-      output.textContent = data.message || "Verification successful!";
-      setTimeout(() => { window.location.href = '/profile.html?email=' + encodeURIComponent(pendingLoginData.email); }, 500);
+      output.textContent = "Verification successful!";
+      setTimeout(()=>window.location.href='/profile.html?email='+encodeURIComponent(pendingLoginData.email),500);
     } else output.textContent = `Error: ${data.error || 'Verification failed'}`;
-  } catch (err) { console.error(err); output.textContent = 'Error: Could not reach login server'; }
+  } catch(err) { output.textContent='Error: Could not reach login server'; console.error(err); }
 });
 
 // Google login
-document.getElementById('googleBtn').addEventListener('click', () => {
-  window.location.href = '/api/googleRedirect'; // Vercel redirect
-});
+document.getElementById('googleBtn').addEventListener('click',()=>window.location.href='/api/googleRedirect');
 </script>
+
 </body>
 </html>
