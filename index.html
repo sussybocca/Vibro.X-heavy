@@ -83,12 +83,19 @@ let videosCache = [];
 let displayedCount = 0;
 const pageSize = 10;
 
+// Get session token from cookie
 function getSessionCookie() {
   const cookies = document.cookie.split(';').map(c => c.trim());
   const sessionCookie = cookies.find(c => c.startsWith('__Host-session_secure='));
   return sessionCookie ? sessionCookie.split('=')[1] : null;
 }
 
+// Redirect to login if not logged in
+function redirectToLogin() {
+  window.location.href = 'login.html';
+}
+
+// Open video modal
 function openModal(videoUrl) {
   const modal = document.getElementById('videoModal');
   const modalVideo = document.getElementById('modalVideo');
@@ -97,6 +104,7 @@ function openModal(videoUrl) {
   modalVideo.play();
 }
 
+// Close video modal
 function closeModal() {
   const modal = document.getElementById('videoModal');
   const modalVideo = document.getElementById('modalVideo');
@@ -107,6 +115,9 @@ function closeModal() {
 
 // Upload video
 document.getElementById('uploadBtn').addEventListener('click', async () => {
+  const sessionToken = getSessionCookie();
+  if (!sessionToken) return redirectToLogin();
+
   const videoFile = document.getElementById('videoFile').files[0];
   const coverFile = document.getElementById('coverFile').files[0];
   const title = document.getElementById('videoTitle').value.trim();
@@ -124,28 +135,43 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
   formData.append('title', title);
 
   try {
-    const sessionToken = getSessionCookie();
-    const headers = {};
-    if (sessionToken) headers['Authorization'] = 'Bearer ' + sessionToken;
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload-video', true);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + sessionToken);
 
-    const response = await fetch('/api/upload-video', { method:'POST', body:formData, headers, credentials:'same-origin' });
-    if (!response.ok) { const text = await response.text(); document.getElementById('result').innerText = 'Upload failed: '+text; return; }
+    xhr.upload.onprogress = function(e) {
+      if (e.lengthComputable) progressBar.value = (e.loaded / e.total) * 100;
+    };
 
-    const data = await response.json();
-    document.getElementById('result').innerHTML = `
-      Upload successful!<br>
-      <video controls poster="${data.coverUrl}">
-        <source src="${data.videoUrl}" type="video/mp4">
-      </video>
-    `;
-    loadVideos(true);
+    xhr.onload = function() {
+      progressBar.style.display = 'none';
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const data = JSON.parse(xhr.responseText);
+        document.getElementById('result').innerHTML = `
+          Upload successful!<br>
+          <video controls poster="${data.coverUrl}">
+            <source src="${data.videoUrl}" type="video/mp4">
+          </video>
+        `;
+        loadVideos(true);
+      } else {
+        document.getElementById('result').innerText = 'Upload failed: ' + xhr.responseText;
+      }
+    };
+
+    xhr.onerror = function() {
+      progressBar.style.display = 'none';
+      document.getElementById('result').innerText = 'Upload failed: Network error';
+    };
+
+    xhr.send(formData);
   } catch(err) {
-    console.error(err);
-    document.getElementById('result').innerText='Upload failed: '+err.message;
-  } finally { progressBar.style.display='none'; }
+    progressBar.style.display = 'none';
+    document.getElementById('result').innerText = 'Upload failed: ' + err.message;
+  }
 });
 
-// Render videos
+// Render videos with comments and new comment box
 function renderVideos(videos) {
   const list = document.getElementById('videosList');
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -193,9 +219,7 @@ function renderVideos(videos) {
     vid.addEventListener('click',()=>openModal(video.videoUrl));
 
     const shareBtn = div.querySelector('.shareBtn');
-    shareBtn.addEventListener('click',()=>{
-      navigator.clipboard.writeText(video.videoUrl).then(()=>alert('Video URL copied!')).catch(()=>alert('Failed.'));
-    });
+    shareBtn.addEventListener('click',()=>{ navigator.clipboard.writeText(video.videoUrl).then(()=>alert('Video URL copied!')).catch(()=>alert('Failed.')); });
 
     const commentsDiv = div.querySelector('.commentsSection');
     (video.comments||[]).forEach(c=>{
@@ -211,41 +235,35 @@ function renderVideos(videos) {
       commentsDiv.appendChild(cDiv);
     });
 
-    const postBtn = div.querySelector('.new-comment button');
-    const input = div.querySelector('.new-comment input');
-    postBtn.addEventListener('click', async () => {
-      const text = input.value.trim();
-      if (!text) return alert('Enter a comment!');
+    // Handle new comment posting
+    const newCommentInput = div.querySelector('.new-comment input');
+    const newCommentBtn = div.querySelector('.new-comment button');
+    newCommentBtn.addEventListener('click', async () => {
+      const text = newCommentInput.value.trim();
+      if (!text) return;
       const sessionToken = getSessionCookie();
-      if (!sessionToken) return alert('You must be logged in to comment');
-
+      if (!sessionToken) return redirectToLogin();
       try {
-        const res = await fetch('/api/add-comment', {
+        const response = await fetch(`/api/view-videos?videoId=${video.id}`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + sessionToken
-          },
-          body: JSON.stringify({ videoId: video.id, text })
+          headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + sessionToken },
+          body: JSON.stringify({ text })
         });
-        if (!res.ok) { const txt = await res.text(); return alert('Comment failed: '+txt); }
-
-        const newComment = await res.json();
-        const cDiv = document.createElement('div');
-        cDiv.className='comment';
-        cDiv.innerHTML=`
-          <div class="comment-user">
-            <img src="${newComment.user.avatar_url || 'https://via.placeholder.com/24'}" alt="avatar">
-            <span>${newComment.user.username || 'You'} (${newComment.user.email || ''})</span>
-          </div>
-          <div class="comment-text">${newComment.text}</div>
-        `;
-        commentsDiv.appendChild(cDiv);
-        input.value='';
-      } catch(err) {
-        console.error(err);
-        alert('Failed to post comment');
-      }
+        if (response.ok) {
+          const c = await response.json();
+          const cDiv = document.createElement('div');
+          cDiv.className='comment';
+          cDiv.innerHTML=`
+            <div class="comment-user">
+              <img src="${c.user?.avatar_url || 'https://via.placeholder.com/24'}" alt="avatar">
+              <span>${c.user?.username || 'Unknown'} (${c.user?.email || ''})</span>
+            </div>
+            <div class="comment-text">${c.text}</div>
+          `;
+          commentsDiv.appendChild(cDiv);
+          newCommentInput.value='';
+        } else alert('Failed to post comment');
+      } catch(err){ alert('Error: '+err.message); }
     });
   });
 
@@ -263,7 +281,6 @@ async function loadVideos(reset=false) {
       if (!response.ok) { const text=await response.text(); document.getElementById('videosList').innerText='Failed: '+text; return; }
       videosCache = (await response.json()).sort((a,b)=>new Date(b.uploaded_at)-new Date(a.uploaded_at));
     } catch(err) {
-      console.error(err);
       document.getElementById('videosList').innerText='Failed to fetch videos';
       return;
     }
@@ -279,6 +296,5 @@ document.getElementById('searchInput').addEventListener('input',()=>{
   renderVideos(videosCache);
 });
 </script>
-
 </body>
 </html>
