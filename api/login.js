@@ -23,11 +23,11 @@ async function verifyCaptcha(token, ip) {
   }
 }
 
-// Generate session token
+// Generate session token (AES-256-GCM)
 function generateSessionToken() {
   const iv = crypto.randomBytes(16);
   const key = crypto.scryptSync(process.env.SESSION_SECRET, 'salt', 32);
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
   const uuid = uuidv4();
   const encrypted = cipher.update(uuid, 'utf8', 'hex') + cipher.final('hex');
   const tag = cipher.getAuthTag().toString('hex');
@@ -41,7 +41,9 @@ export default async function handler(req, res) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const { email, password, remember_me, captcha_token } = body;
 
-    if (!email || !password) return res.status(400).json({ success: false, error: 'Email and password required' });
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'Email and password required' });
+    }
 
     const ip = req.headers['x-forwarded-for'] || req.headers['client-ip'] || 'unknown';
 
@@ -56,7 +58,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ success: false, error: 'CAPTCHA failed' });
     }
 
-    // Fetch user
+    // Fetch user from Supabase
     const { data: user } = await supabase.from('users').select('*').eq('email', email).maybeSingle();
     if (!user) return res.status(401).json({ success: false, error: 'Invalid email or password' });
 
