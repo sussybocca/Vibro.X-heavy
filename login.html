@@ -1,1 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/logo.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/logo.png">
+  <link href="/styles.css" rel="stylesheet">
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
+<div class="card w-full max-w-md shadow-xl p-6 bg-white flex flex-col space-y-4">
+  <div class="flex items-center space-x-4">
+    <a href="/index.html"><img src="/assets/logo.png" alt="Logo" class="h-16 cursor-pointer"></a>
+    <h1 class="text-2xl font-bold">Login</h1>
+  </div>
+
+  <div class="space-y-3">
+    <input type="email" id="email" placeholder="Email" class="input input-bordered w-full" required>
+    <input type="password" id="password" placeholder="Password" class="input input-bordered w-full" required>
+
+    <label class="flex items-center space-x-2">
+      <input type="checkbox" id="rememberMe" class="checkbox">
+      <span>Remember Me</span>
+    </label>
+
+    <label class="flex items-center space-x-2 text-sm">
+      <input type="checkbox" id="acceptTerms" class="checkbox">
+      <span>I agree to the <a href="/terms.html" class="text-blue-500 underline" target="_blank">Terms of Service</a></span>
+    </label>
+
+    <div class="h-captcha" data-sitekey="2b1cc900-c846-40e8-bf32-dbeeeec2d1c0"></div>
+
+    <button id="loginBtn" class="btn btn-primary w-full">Login</button>
+    <button id="googleBtn" class="btn btn-outline w-full">Login with Google</button>
+  </div>
+
+  <div id="verifySection" class="mt-4 hidden">
+    <p class="mb-2 text-sm">We sent a verification code to your email. Enter it below:</p>
+    <input type="text" id="verificationCode" placeholder="Verification code" class="input input-bordered w-full mb-2">
+    <button id="verifyBtn" class="btn btn-success w-full">Verify & Continue</button>
+  </div>
+
+  <div id="output" class="mt-2 text-red-500 text-sm"></div>
+</div>
+
+<script>
+const output = document.getElementById('output');
+const verifySection = document.getElementById('verifySection');
+let pendingLoginData = null;
+
+function getFingerprint() {
+  return navigator.userAgent + navigator.language + screen.width + screen.height;
+}
+
+// Email/password login
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const remember_me = document.getElementById('rememberMe').checked;
+  const acceptTerms = document.getElementById('acceptTerms').checked;
+
+  if (!acceptTerms) { output.textContent = "You must agree to the Terms of Service."; return; }
+  const captcha_token = hcaptcha.getResponse();
+  if (!captcha_token) { output.textContent = "Please complete the CAPTCHA."; return; }
+  if (!email || !password) { output.textContent = "Please enter both email and password."; return; }
+
+  const fingerprint = getFingerprint();
+  try {
+    const res = await fetch('/api/login', { // updated for Vercel
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, remember_me, captcha_token, fingerprint, accepted_terms: true })
+    });
+    const data = await res.json();
+    if (data.verification_required) {
+      output.textContent = data.message || "Verification code sent to email.";
+      pendingLoginData = { email, password, remember_me, fingerprint, accepted_terms: true };
+      verifySection.classList.remove('hidden');
+    } else if (data.success) {
+      output.textContent = data.message || "Login successful!";
+      setTimeout(() => { window.location.href = '/profile.html?email=' + encodeURIComponent(email); }, 500);
+    } else if (data.redirect) window.location.href = data.redirect;
+    else output.textContent = `Error: ${data.error || 'Unknown error'}`;
+  } catch (err) { console.error(err); output.textContent = 'Error: Could not reach login server'; }
+});
+
+// Verification
+document.getElementById('verifyBtn').addEventListener('click', async () => {
+  if (!pendingLoginData) return;
+  const verification_code = document.getElementById('verificationCode').value.trim();
+  if (!verification_code) { output.textContent = "Enter the verification code."; return; }
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...pendingLoginData, verification_code })
+    });
+    const data = await res.json();
+    if (data.success) {
+      output.textContent = data.message || "Verification successful!";
+      setTimeout(() => { window.location.href = '/profile.html?email=' + encodeURIComponent(pendingLoginData.email); }, 500);
+    } else output.textContent = `Error: ${data.error || 'Verification failed'}`;
+  } catch (err) { console.error(err); output.textContent = 'Error: Could not reach login server'; }
+});
+
+// Google login
+document.getElementById('googleBtn').addEventListener('click', () => {
+  window.location.href = '/api/googleRedirect'; // Vercel redirect
+});
+</script>
+</body>
+</html>
