@@ -1,20 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Encrypt the video filename for front-end display
-function encryptVideoUrl(videoName) {
-  const hash = crypto.createHash('sha256').update(videoName).digest('hex').slice(0, 8);
-  const encoded = Buffer.from(videoName).toString('base64url');
-  return `/ECR/V/${hash}_${encoded}`;
-}
-
 export default async function handler(req, res) {
   try {
-    // Get all files in the 'videos' storage bucket
+    // List all files in the 'videos' storage bucket
     const { data: files, error: listError } = await supabase
       .storage
       .from('videos')
@@ -42,10 +34,17 @@ export default async function handler(req, res) {
           .eq('item_id', videoRecord.id);
         const likesCount = votesData ? votesData.length : 0;
 
-        // Encrypted video path for front-end
-        const encryptedVideoUrl = encryptVideoUrl(videoRecord.video_url);
+        // Get signed URL for the video
+        let videoUrl = null;
+        if (videoRecord.video_url) {
+          const { data: signedData, error: signedError } = await supabase
+            .storage
+            .from('videos')
+            .createSignedUrl(videoRecord.video_url, 3600); // valid for 1 hour
+          if (!signedError) videoUrl = signedData.signedUrl;
+        }
 
-        // Cover art signed URL
+        // Get signed URL for cover art
         let coverUrl = null;
         if (videoRecord.cover_url) {
           const { data: signedCoverData, error: signedCoverError } = await supabase
@@ -103,8 +102,8 @@ export default async function handler(req, res) {
           description: videoRecord.description,
           likes: likesCount,
           uploaded_at: videoRecord.created_at ? new Date(videoRecord.created_at).toISOString() : null,
-          videoUrl: encryptedVideoUrl, // encrypted
-          coverUrl,
+          videoUrl, // <-- real signed URL now
+          coverUrl, // <-- real signed URL
           user,
           comments: commentsWithUsers
         };
