@@ -242,7 +242,10 @@ function renderVideos(videos) {
       const text = newCommentInput.value.trim();
       if (!text) return;
       const sessionToken = getSessionCookie();
-      if (!sessionToken) return redirectToLogin();
+if (!sessionToken || sessionToken === '') {
+  window.location.href = 'login.html';
+  return;
+}
       try {
         const response = await fetch(`/api/view-videos?videoId=${video.id}`, {
           method: 'POST',
