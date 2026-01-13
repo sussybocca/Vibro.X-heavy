@@ -142,11 +142,11 @@ function renderVideos(videos){
 
     div.querySelector('.shareBtn').addEventListener('click',()=>{ navigator.clipboard.writeText(video.videoUrl).then(()=>alert('Copied!')).catch(()=>alert('Failed.')); });
 
-   // Render existing comments
+// Render existing comments safely
 const commentsDiv = div.querySelector('.commentsSection');
 (video.comments || []).forEach(c => {
-  const username = c.user?.username || c.user?.name || 'Anonymous';
-  const avatar = c.user?.avatar_url || 'https://via.placeholder.com/24';
+  const username = (c.user && (c.user.username || c.user.name)) || 'User';
+  const avatar = (c.user && c.user.avatar_url) || 'https://via.placeholder.com/24';
   
   const cDiv = document.createElement('div');
   cDiv.className = 'comment';
