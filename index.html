@@ -11,7 +11,6 @@
 <!-- Font Awesome for icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-/* [Keep all your existing CSS exactly as is] */
 body { 
     font-family: 'Segoe UI', Arial, sans-serif; 
     background: linear-gradient(135deg, #121212 0%, #1a1a2e 100%);
@@ -434,53 +433,6 @@ progress::-webkit-progress-value {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-
-/* Upload progress specific styles */
-.upload-status {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    display: none;
-}
-
-.upload-step {
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    opacity: 0.7;
-}
-
-.upload-step.active {
-    opacity: 1;
-    color: #00a8ff;
-}
-
-.upload-step.completed {
-    opacity: 1;
-    color: #00cc66;
-}
-
-.upload-step i {
-    font-size: 1.1rem;
-}
-
-.file-info {
-    font-size: 0.9rem;
-    opacity: 0.8;
-    margin-top: 0.5rem;
-}
-
-#cancelUploadBtn {
-    background: rgba(255, 50, 50, 0.2);
-    color: #ff5555;
-    margin-top: 1rem;
-}
-
-#cancelUploadBtn:hover {
-    background: rgba(255, 50, 50, 0.4);
-}
 </style>
 </head>
 <body>
@@ -503,41 +455,12 @@ progress::-webkit-progress-value {
 </div>
 
 <div id="uploadSection">
-  <h2>Upload Video</h2>
-  <div class="file-info">
-    <p><i class="fas fa-info-circle"></i> Supported: MP4, WebM, MOV, AVI, MKV (max 500MB)</p>
-    <p><i class="fas fa-info-circle"></i> Cover image: JPEG, PNG, GIF, WebP</p>
-  </div>
-  <input type="file" id="videoFile" accept=".mp4,.webm,.mov,.avi,.mk4,video/mp4,video/webm,video/quicktime,video/mov,video/avi,video/mkv">
-  <input type="file" id="coverFile" accept="image/jpeg,image/png,image/gif,image/webp,image/jpg">
-  <input type="text" id="videoTitle" placeholder="Video title (required)" maxlength="100">
-  <textarea id="videoDescription" placeholder="Video description (optional)" rows="3" maxlength="500"></textarea>
-  <button id="uploadBtn">
-    <i class="fas fa-upload"></i> Upload Video
-  </button>
-  <button id="cancelUploadBtn" style="display: none;">
-    <i class="fas fa-times"></i> Cancel Upload
-  </button>
-  
-  <div class="upload-status" id="uploadStatus">
-    <div class="upload-step" id="step1">
-      <i class="fas fa-circle"></i>
-      <span>Preparing upload...</span>
-    </div>
-    <div class="upload-step" id="step2">
-      <i class="fas fa-circle"></i>
-      <span>Uploading video to storage...</span>
-    </div>
-    <div class="upload-step" id="step3">
-      <i class="fas fa-circle"></i>
-      <span>Uploading cover image...</span>
-    </div>
-    <div class="upload-step" id="step4">
-      <i class="fas fa-circle"></i>
-      <span>Finalizing upload...</span>
-    </div>
-  </div>
-  
+  <h2>Upload MP4 Video</h2>
+  <input type="file" id="videoFile" accept=".mp4,video/mp4">
+  <input type="file" id="coverFile" accept="image/*">
+  <input type="text" id="videoTitle" placeholder="Video title">
+  <textarea id="videoDescription" placeholder="Video description (optional)" rows="3"></textarea>
+  <button id="uploadBtn">Upload Video</button>
   <progress id="progressBar" max="100"></progress>
   <div id="result"></div>
 </div>
@@ -563,28 +486,24 @@ progress::-webkit-progress-value {
 <div class="notification" id="notification"></div>
 
 <script>
-// ===== CONFIGURATION =====
 let videosCache = [], displayedCount = 0, pageSize = 10;
 let observer;
 let currentUser = null;
 const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
-let currentUpload = null; // To track current upload for cancellation
 
-// ===== NOTIFICATION SYSTEM =====
+// Notification system
 function showNotification(message, type = 'info') {
     const notification = document.getElementById('notification');
     notification.textContent = message;
     notification.style.display = 'block';
-    notification.style.background = type === 'error' ? 'rgba(255, 50, 50, 0.9)' : 
-                                   type === 'success' ? 'rgba(0, 204, 102, 0.9)' : 
-                                   'rgba(0, 119, 204, 0.9)';
+    notification.style.background = type === 'error' ? 'rgba(255, 50, 50, 0.9)' : 'rgba(0, 119, 204, 0.9)';
     
     setTimeout(() => {
         notification.style.display = 'none';
     }, 3000);
 }
 
-// ===== USER MANAGEMENT =====
+// Load current user
 async function loadCurrentUser() {
     try {
         const res = await fetch('/api/me', { 
@@ -597,6 +516,7 @@ async function loadCurrentUser() {
             updateUserProfile(currentUser);
             document.getElementById('logoutBtn').style.display = 'block';
         } else {
+            // Guest user
             currentUser = null;
             document.getElementById('logoutBtn').style.display = 'none';
         }
@@ -606,6 +526,7 @@ async function loadCurrentUser() {
     }
 }
 
+// Update user profile in header
 function updateUserProfile(user) {
     if (user) {
         document.getElementById('userAvatar').src = user.avatar_url || 'https://via.placeholder.com/44';
@@ -618,6 +539,7 @@ function updateUserProfile(user) {
     }
 }
 
+// Logout function
 async function logout() {
     try {
         const res = await fetch('/api/logout', {
@@ -628,7 +550,7 @@ async function logout() {
         if (res.ok) {
             currentUser = null;
             updateUserProfile(null);
-            showNotification('Logged out successfully', 'success');
+            showNotification('Logged out successfully');
             document.getElementById('logoutBtn').style.display = 'none';
             loadVideos(true);
         }
@@ -637,7 +559,7 @@ async function logout() {
     }
 }
 
-// ===== MODAL FUNCTIONS =====
+// Modal functions
 function openModal(url){ 
     const m = document.getElementById('videoModal');
     const v = document.getElementById('modalVideo'); 
@@ -654,228 +576,7 @@ function closeModal(){
     m.style.display = 'none'; 
 }
 
-// ===== UPLOAD SYSTEM (UPDATED FOR SIGNED URLS) =====
-function resetUploadUI() {
-    document.getElementById('progressBar').style.display = 'none';
-    document.getElementById('progressBar').value = 0;
-    document.getElementById('uploadStatus').style.display = 'none';
-    document.getElementById('uploadBtn').style.display = 'block';
-    document.getElementById('cancelUploadBtn').style.display = 'none';
-    
-    // Reset all steps
-    ['step1', 'step2', 'step3', 'step4'].forEach(id => {
-        const step = document.getElementById(id);
-        step.classList.remove('active', 'completed');
-        step.querySelector('i').className = 'fas fa-circle';
-    });
-}
-
-function updateUploadStep(stepId, status) {
-    const step = document.getElementById(stepId);
-    const icon = step.querySelector('i');
-    
-    step.classList.remove('active', 'completed');
-    if (status === 'active') {
-        step.classList.add('active');
-        icon.className = 'fas fa-spinner fa-spin';
-    } else if (status === 'completed') {
-        step.classList.add('completed');
-        icon.className = 'fas fa-check-circle';
-    } else {
-        icon.className = 'fas fa-circle';
-    }
-}
-
-function cancelUpload() {
-    if (currentUpload && currentUpload.abort) {
-        currentUpload.abort();
-    }
-    resetUploadUI();
-    showNotification('Upload cancelled', 'error');
-}
-
-// Main upload function using signed URLs
-document.getElementById('uploadBtn').addEventListener('click', async () => {
-    if (!currentUser) {
-        showNotification('Please sign in to upload videos', 'error');
-        return;
-    }
-    
-    const videoFile = document.getElementById('videoFile').files[0];
-    const coverFile = document.getElementById('coverFile').files[0];
-    const title = document.getElementById('videoTitle').value.trim();
-    
-    if (!videoFile || !title) { 
-        showNotification('Video file and title are required', 'error'); 
-        return; 
-    }
-    
-    // File size validation (500MB limit)
-    if (videoFile.size > 500 * 1024 * 1024) {
-        showNotification('Video file is too large (max 500MB)', 'error');
-        return;
-    }
-    
-    // File type validation
-    const allowedVideoTypes = [
-        'video/mp4', 'video/webm', 'video/quicktime', 
-        'video/mov', 'video/avi', 'video/mkv'
-    ];
-    
-    const allowedImageTypes = [
-        'image/jpeg', 'image/png', 'image/gif', 
-        'image/webp', 'image/jpg'
-    ];
-    
-    if (!allowedVideoTypes.includes(videoFile.type)) {
-        showNotification(`Invalid video format. Supported: ${allowedVideoTypes.join(', ')}`, 'error');
-        return;
-    }
-    
-    if (coverFile && !allowedImageTypes.includes(coverFile.type)) {
-        showNotification(`Invalid image format. Supported: ${allowedImageTypes.join(', ')}`, 'error');
-        return;
-    }
-    
-    // Setup UI
-    resetUploadUI();
-    document.getElementById('uploadStatus').style.display = 'block';
-    document.getElementById('progressBar').style.display = 'block';
-    document.getElementById('uploadBtn').style.display = 'none';
-    document.getElementById('cancelUploadBtn').style.display = 'block';
-    
-    try {
-        // STEP 1: Prepare upload
-        updateUploadStep('step1', 'active');
-        
-        const prepareData = {
-            action: 'prepare',
-            videoInfo: {
-                title: title,
-                description: document.getElementById('videoDescription').value.trim(),
-                aiGenerated: false
-            },
-            fileInfo: {
-                video: {
-                    name: videoFile.name,
-                    type: videoFile.type,
-                    size: videoFile.size
-                }
-            }
-        };
-        
-        // Add cover info if provided
-        if (coverFile) {
-            prepareData.fileInfo.cover = {
-                name: coverFile.name,
-                type: coverFile.type
-            };
-        }
-        
-        const prepareRes = await fetch('/api/upload-video', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(prepareData)
-        });
-        
-        if (!prepareRes.ok) {
-            throw new Error(`Failed to prepare upload: ${await prepareRes.text()}`);
-        }
-        
-        const prepareResult = await prepareRes.json();
-        if (!prepareResult.success) {
-            throw new Error(prepareResult.error || 'Upload preparation failed');
-        }
-        
-        updateUploadStep('step1', 'completed');
-        
-        // STEP 2: Upload video to Supabase
-        updateUploadStep('step2', 'active');
-        
-        const videoUploadRes = await fetch(prepareResult.uploadInfo.signedUrls.video.signedUrl, {
-            method: 'PUT',
-            body: videoFile,
-            headers: { 'Content-Type': videoFile.type }
-        });
-        
-        if (!videoUploadRes.ok) {
-            throw new Error('Failed to upload video to storage');
-        }
-        
-        updateUploadStep('step2', 'completed');
-        
-        // STEP 3: Upload cover if provided
-        if (coverFile && prepareResult.uploadInfo.signedUrls.cover) {
-            updateUploadStep('step3', 'active');
-            
-            const coverUploadRes = await fetch(prepareResult.uploadInfo.signedUrls.cover.signedUrl, {
-                method: 'PUT',
-                body: coverFile,
-                headers: { 'Content-Type': coverFile.type }
-            });
-            
-            if (!coverUploadRes.ok) {
-                console.warn('Cover upload failed, but video uploaded successfully');
-            }
-            
-            updateUploadStep('step3', 'completed');
-        } else {
-            // Skip cover step if no cover
-            updateUploadStep('step3', 'completed');
-        }
-        
-        // STEP 4: Complete the upload
-        updateUploadStep('step4', 'active');
-        
-        const completeRes = await fetch('/api/upload-video', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-                action: 'complete',
-                videoId: prepareResult.uploadInfo.videoId,
-                success: true
-            })
-        });
-        
-        if (!completeRes.ok) {
-            throw new Error(`Failed to complete upload: ${await completeRes.text()}`);
-        }
-        
-        const completeResult = await completeRes.json();
-        if (!completeResult.success) {
-            throw new Error(completeResult.error || 'Upload completion failed');
-        }
-        
-        updateUploadStep('step4', 'completed');
-        
-        // Success!
-        showNotification('Video uploaded successfully!', 'success');
-        
-        // Reset form
-        document.getElementById('videoFile').value = '';
-        document.getElementById('coverFile').value = '';
-        document.getElementById('videoTitle').value = '';
-        document.getElementById('videoDescription').value = '';
-        
-        // Reload videos
-        setTimeout(() => {
-            resetUploadUI();
-            loadVideos(true);
-        }, 1000);
-        
-    } catch (err) {
-        console.error('Upload error:', err);
-        showNotification(`Upload failed: ${err.message}`, 'error');
-        resetUploadUI();
-    }
-});
-
-// Cancel upload button
-document.getElementById('cancelUploadBtn').addEventListener('click', cancelUpload);
-
-// ===== VIDEO DISPLAY FUNCTIONS =====
+// Mobile scroll autoplay
 function initObserver(){
     if(!isMobile) return;
     observer = new IntersectionObserver(entries => {
@@ -890,20 +591,7 @@ function initObserver(){
     }, { threshold: 0.5 });
 }
 
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return date.toLocaleDateString();
-}
-
-// ===== VIDEO INTERACTION FUNCTIONS =====
+// Like a video
 async function likeVideo(videoId, isLiked) {
     if (!currentUser) {
         showNotification('Please sign in to like videos', 'error');
@@ -935,13 +623,216 @@ async function likeVideo(videoId, isLiked) {
                 likeCount.textContent = data.likes;
             }
             
-            showNotification(isLiked ? 'Video unliked' : 'Video liked!', 'success');
+            showNotification(isLiked ? 'Video unliked' : 'Video liked!');
         }
     } catch (err) {
         showNotification('Failed to like video', 'error');
     }
 }
 
+// Upload video
+document.getElementById('uploadBtn').addEventListener('click', async () => {
+    if (!currentUser) {
+        showNotification('Please sign in to upload videos', 'error');
+        return;
+    }
+    
+    const videoFile = document.getElementById('videoFile').files[0];
+    const coverFile = document.getElementById('coverFile').files[0];
+    const title = document.getElementById('videoTitle').value.trim();
+    const description = document.getElementById('videoDescription').value.trim();
+    
+    if(!videoFile || !coverFile || !title){ 
+        showNotification('Video, cover image, and title are required', 'error'); 
+        return; 
+    }
+
+    const progressBar = document.getElementById('progressBar'); 
+    progressBar.style.display = 'block'; 
+    progressBar.value = 0;
+    
+    const formData = new FormData();
+    formData.append('video', videoFile);
+    formData.append('cover', coverFile);
+    formData.append('title', title);
+    if (description) formData.append('description', description);
+
+    try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/upload-video', true);
+        xhr.withCredentials = true;
+        
+        xhr.upload.onprogress = e => { 
+            if(e.lengthComputable) progressBar.value = (e.loaded / e.total) * 100; 
+        };
+        
+        xhr.onload = () => { 
+            progressBar.style.display = 'none'; 
+            if(xhr.status >= 200 && xhr.status < 300) {
+                showNotification('Video uploaded successfully!');
+                document.getElementById('videoTitle').value = '';
+                document.getElementById('videoDescription').value = '';
+                document.getElementById('videoFile').value = '';
+                document.getElementById('coverFile').value = '';
+                loadVideos(true); 
+            } else {
+                showNotification('Upload failed: ' + xhr.responseText, 'error');
+            }
+        };
+        
+        xhr.onerror = () => {
+            progressBar.style.display = 'none';
+            showNotification('Upload failed: Network error', 'error');
+        };
+        
+        xhr.send(formData);
+    } catch (err) {
+        progressBar.style.display = 'none';
+        showNotification('Upload failed: ' + err.message, 'error');
+    }
+});
+
+// Format date
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString();
+}
+
+// Render videos
+function renderVideos(videos) {
+    const list = document.getElementById('videosList');
+    const loading = document.getElementById('loadingVideos');
+    
+    if (loading) loading.style.display = 'none';
+    
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = videos.filter(v => 
+        (v.user?.email || '').toLowerCase().includes(searchTerm) || 
+        (v.user?.username || '').toLowerCase().includes(searchTerm) || 
+        (v.title || '').toLowerCase().includes(searchTerm) ||
+        (v.description || '').toLowerCase().includes(searchTerm)
+    );
+    
+    const batch = filtered.slice(displayedCount, displayedCount + pageSize);
+
+    batch.forEach(video => {
+        const div = document.createElement('div'); 
+        div.className = 'video-item';
+        div.innerHTML = `
+            <div class="user-info">
+                <img src="${video.user?.avatar_url || 'https://via.placeholder.com/42'}" alt="${video.user?.username || 'User'}">
+                <div class="user-details">
+                    <div class="username">${video.user?.username || 'User'}</div>
+                    <div class="upload-time">${formatDate(video.uploaded_at)} • ${video.likes || 0} likes</div>
+                </div>
+            </div>
+            
+            <div class="video-meta">
+                <div class="video-title">${video.title || 'Untitled Video'}</div>
+                ${video.description ? `<div class="video-description">${video.description}</div>` : ''}
+            </div>
+            
+            <div style="position: relative;">
+                <video muted preload="metadata" poster="${video.coverUrl || ''}" playsinline>
+                    <source src="${video.videoUrl || ''}" type="video/mp4">
+                </video>
+                <span class="video-duration">--:--</span>
+            </div>
+            
+            <div class="video-stats">
+                <div class="stat">
+                    <i class="fas fa-eye"></i>
+                    <span>${video.views || 0} views</span>
+                </div>
+                <div class="stat">
+                    <i class="fas fa-comment"></i>
+                    <span>${video.comments?.length || 0} comments</span>
+                </div>
+            </div>
+            
+            <div class="video-actions">
+                <button class="like-btn ${video.hasLiked ? 'liked' : ''}" data-video-id="${video.id}" onclick="likeVideo('${video.id}', ${video.hasLiked || false})">
+                    <i class="${video.hasLiked ? 'fas' : 'far'} fa-heart"></i>
+                    <span class="like-count" data-video-id="${video.id}">${video.likes || 0}</span>
+                </button>
+                <button class="shareBtn action-btn" onclick="shareVideo('${video.videoUrl}')">
+                    <i class="fas fa-share"></i> Share
+                </button>
+            </div>
+            
+            <div class="commentsSection"></div>
+            
+            ${currentUser ? `
+                <div class="new-comment">
+                    <input type="text" placeholder="Write a comment..." data-video-id="${video.id}">
+                    <button onclick="postComment('${video.id}')">Post</button>
+                </div>
+            ` : '<p style="text-align: center; opacity: 0.7;">Sign in to comment</p>'}
+        `;
+        list.appendChild(div);
+
+        const vid = div.querySelector('video');
+        const dur = div.querySelector('.video-duration');
+        
+        vid.addEventListener('loadedmetadata', () => { 
+            if (vid.duration) {
+                const minutes = Math.floor(vid.duration / 60);
+                const seconds = Math.floor(vid.duration % 60);
+                dur.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`; 
+            }
+        });
+
+        if(!isMobile) {
+            div.addEventListener('mouseenter', () => { 
+                vid.play().catch(() => {}); 
+                dur.style.opacity = '1'; 
+            });
+            
+            div.addEventListener('mouseleave', () => { 
+                vid.pause(); 
+                vid.currentTime = 0; 
+                dur.style.opacity = '0'; 
+            });
+            
+            vid.addEventListener('click', () => openModal(video.videoUrl));
+        } else { 
+            if(observer) observer.observe(vid); 
+        }
+
+        // Render existing comments
+        const commentsDiv = div.querySelector('.commentsSection');
+        (video.comments || []).forEach(c => {
+            const cDiv = document.createElement('div'); 
+            cDiv.className = 'comment';
+            cDiv.innerHTML = `
+                <div class="comment-user">
+                    <img src="${c.user?.avatar_url || 'https://via.placeholder.com/28'}" alt="${c.user?.username || 'User'}">
+                    <span>${c.user?.username || 'User'}</span>
+                </div>
+                <div class="comment-text">${c.text || ''}</div>
+                <div class="comment-meta">
+                    <span>${formatDate(c.created_at)}</span>
+                    ${c.likes ? `<span><i class="fas fa-heart"></i> ${c.likes}</span>` : ''}
+                </div>
+            `;
+            commentsDiv.appendChild(cDiv);
+        });
+    });
+
+    displayedCount += batch.length;
+    document.getElementById('totalVideos').innerText = `Showing ${displayedCount} of ${filtered.length} videos`;
+    document.getElementById('loadMoreBtn').style.display = (displayedCount < filtered.length) ? 'block' : 'none';
+}
+
+// Share video function
 function shareVideo(url) {
     if (navigator.share) {
         navigator.share({
@@ -950,13 +841,14 @@ function shareVideo(url) {
         });
     } else {
         navigator.clipboard.writeText(url).then(() => {
-            showNotification('Link copied to clipboard!', 'success');
+            showNotification('Link copied to clipboard!');
         }).catch(() => {
             showNotification('Failed to copy link', 'error');
         });
     }
 }
 
+// Post comment function
 async function postComment(videoId) {
     if (!currentUser) {
         showNotification('Please sign in to comment', 'error');
@@ -1000,7 +892,7 @@ async function postComment(videoId) {
             }
             
             input.value = '';
-            showNotification('Comment posted!', 'success');
+            showNotification('Comment posted!');
         } else {
             showNotification('Failed to post comment', 'error');
         }
@@ -1009,133 +901,7 @@ async function postComment(videoId) {
     }
 }
 
-// ===== VIDEO RENDERING =====
-function renderVideos(videos) {
-    const list = document.getElementById('videosList');
-    const loading = document.getElementById('loadingVideos');
-    
-    if (loading) loading.style.display = 'none';
-    
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const filtered = videos.filter(v => 
-        (v.user?.email || '').toLowerCase().includes(searchTerm) || 
-        (v.user?.username || '').toLowerCase().includes(searchTerm) || 
-        (v.title || '').toLowerCase().includes(searchTerm) ||
-        (v.description || '').toLowerCase().includes(searchTerm)
-    );
-    
-    const batch = filtered.slice(displayedCount, displayedCount + pageSize);
-
-    batch.forEach(video => {
-        const div = document.createElement('div'); 
-        div.className = 'video-item';
-        div.innerHTML = `
-            <div class="user-info">
-                <img src="${video.user?.avatar_url || 'https://via.placeholder.com/42'}" alt="${video.user?.username || 'User'}">
-                <div class="user-details">
-                    <div class="username">${video.user?.username || 'User'}</div>
-                    <div class="upload-time">${formatDate(video.created_at || video.uploaded_at)} • ${video.likes || 0} likes</div>
-                </div>
-            </div>
-            
-            <div class="video-meta">
-                <div class="video-title">${video.title || 'Untitled Video'}</div>
-                ${video.description ? `<div class="video-description">${video.description}</div>` : ''}
-            </div>
-            
-            <div style="position: relative;">
-                <video muted preload="metadata" poster="${video.cover_url || ''}" playsinline>
-                    <source src="${video.video_url || ''}" type="video/mp4">
-                </video>
-                <span class="video-duration">--:--</span>
-            </div>
-            
-            <div class="video-stats">
-                <div class="stat">
-                    <i class="fas fa-eye"></i>
-                    <span>${video.views || 0} views</span>
-                </div>
-                <div class="stat">
-                    <i class="fas fa-comment"></i>
-                    <span>${video.comments?.length || 0} comments</span>
-                </div>
-            </div>
-            
-            <div class="video-actions">
-                <button class="like-btn ${video.hasLiked ? 'liked' : ''}" data-video-id="${video.id}" onclick="likeVideo('${video.id}', ${video.hasLiked || false})">
-                    <i class="${video.hasLiked ? 'fas' : 'far'} fa-heart"></i>
-                    <span class="like-count" data-video-id="${video.id}">${video.likes || 0}</span>
-                </button>
-                <button class="shareBtn action-btn" onclick="shareVideo('${video.video_url}')">
-                    <i class="fas fa-share"></i> Share
-                </button>
-            </div>
-            
-            <div class="commentsSection"></div>
-            
-            ${currentUser ? `
-                <div class="new-comment">
-                    <input type="text" placeholder="Write a comment..." data-video-id="${video.id}">
-                    <button onclick="postComment('${video.id}')">Post</button>
-                </div>
-            ` : '<p style="text-align: center; opacity: 0.7;">Sign in to comment</p>'}
-        `;
-        list.appendChild(div);
-
-        const vid = div.querySelector('video');
-        const dur = div.querySelector('.video-duration');
-        
-        vid.addEventListener('loadedmetadata', () => { 
-            if (vid.duration) {
-                const minutes = Math.floor(vid.duration / 60);
-                const seconds = Math.floor(vid.duration % 60);
-                dur.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`; 
-            }
-        });
-
-        if(!isMobile) {
-            div.addEventListener('mouseenter', () => { 
-                vid.play().catch(() => {}); 
-                dur.style.opacity = '1'; 
-            });
-            
-            div.addEventListener('mouseleave', () => { 
-                vid.pause(); 
-                vid.currentTime = 0; 
-                dur.style.opacity = '0'; 
-            });
-            
-            vid.addEventListener('click', () => openModal(video.video_url));
-        } else { 
-            if(observer) observer.observe(vid); 
-        }
-
-        // Render existing comments
-        const commentsDiv = div.querySelector('.commentsSection');
-        (video.comments || []).forEach(c => {
-            const cDiv = document.createElement('div'); 
-            cDiv.className = 'comment';
-            cDiv.innerHTML = `
-                <div class="comment-user">
-                    <img src="${c.user?.avatar_url || 'https://via.placeholder.com/28'}" alt="${c.user?.username || 'User'}">
-                    <span>${c.user?.username || 'User'}</span>
-                </div>
-                <div class="comment-text">${c.text || ''}</div>
-                <div class="comment-meta">
-                    <span>${formatDate(c.created_at)}</span>
-                    ${c.likes ? `<span><i class="fas fa-heart"></i> ${c.likes}</span>` : ''}
-                </div>
-            `;
-            commentsDiv.appendChild(cDiv);
-        });
-    });
-
-    displayedCount += batch.length;
-    document.getElementById('totalVideos').innerText = `Showing ${displayedCount} of ${filtered.length} videos`;
-    document.getElementById('loadMoreBtn').style.display = (displayedCount < filtered.length) ? 'block' : 'none';
-}
-
-// ===== VIDEO LOADING =====
+// Load videos
 async function loadVideos(reset = false) {
     if (reset) { 
         displayedCount = 0; 
@@ -1167,13 +933,12 @@ async function loadVideos(reset = false) {
     }
 }
 
-// ===== INITIALIZATION =====
+// Initialize page
 window.addEventListener('DOMContentLoaded', async () => {
     await loadCurrentUser();
     loadVideos();
 });
 
-// ===== EVENT LISTENERS =====
 document.getElementById('loadMoreBtn').addEventListener('click', () => renderVideos(videosCache));
 
 document.getElementById('searchInput').addEventListener('input', () => { 
