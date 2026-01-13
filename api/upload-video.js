@@ -54,7 +54,7 @@ export default async function handler(req, res) {
     const chunks = [];
     let totalSize = 0;
 
-    file.on('data', chunk => {
+    file.on('data', (chunk) => {
       totalSize += chunk.length;
       if (totalSize > MAX_FILE_SIZE) {
         file.resume();
@@ -77,22 +77,34 @@ export default async function handler(req, res) {
     });
   });
 
-  bb.on('error', err => res.status(500).send('Upload error: ' + err.message));
+  bb.on('error', (err) => res.status(500).send('Upload error: ' + err.message));
 
   bb.on('finish', async () => {
-    if (!videoBuffer) return res.status(400).send('No video uploaded');
-    if (!coverBuffer) return res.status(400).send('Cover art is required');
-    if (!videoTitle) return res.status(400).send('Video title is required');
+    if (!videoBuffer) return res.status(400).send('No video uploaded.');
+    if (!coverBuffer) return res.status(400).send('Cover art is required.');
+    if (!videoTitle) return res.status(400).send('Video title is required.');
 
     // Upload video
-    const { error: videoError } = await supabase.storage.from('videos').upload(videoFilename, videoBuffer, { contentType: 'video/mp4', upsert: false });
-    if (videoError) return res.status(500).send(videoError.message);
+    const { error: videoError } = await supabase.storage.from('videos').upload(videoFilename, videoBuffer, {
+      contentType: 'video/mp4',
+      upsert: false,
+    });
+    if (videoError) {
+      console.error('Video upload failed:', videoError);
+      return res.status(500).send(videoError.message);
+    }
 
     // Upload cover
-    const { error: coverError } = await supabase.storage.from('covers').upload(coverFilename, coverBuffer, { contentType: 'image/png', upsert: false });
-    if (coverError) return res.status(500).send(coverError.message);
+    const { error: coverError } = await supabase.storage.from('covers').upload(coverFilename, coverBuffer, {
+      contentType: 'image/png',
+      upsert: false,
+    });
+    if (coverError) {
+      console.error('Cover upload failed:', coverError);
+      return res.status(500).send(coverError.message);
+    }
 
-    // Insert into database with all fields
+    // Insert into database
     const { error: insertError } = await supabase.from('videos').insert([{
       user_id: userId,
       video_url: videoFilename,
@@ -101,13 +113,15 @@ export default async function handler(req, res) {
       original_filename: originalVideoName,
       created_at: new Date(),
       mime_type: 'video/mp4',
-      size: videoBuffer.length
+      size: videoBuffer.length,
     }]);
-
-    if (insertError) return res.status(500).send(insertError.message);
+    if (insertError) {
+      console.error('Database insert failed:', insertError);
+      return res.status(500).send(insertError.message);
+    }
 
     res.status(200).json({ message: 'Upload successful!' });
   });
 
-  req.pipe(bb); // streaming upload for Vercel
+  req.pipe(bb);
 }
