@@ -1,4 +1,3 @@
-// pages/api/me.js
 import { createClient } from '@supabase/supabase-js';
 import cookie from 'cookie';
 
@@ -20,10 +19,10 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    // Verify session
+    // Get session from database
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
-      .select('user_id, expires_at')
+      .select('user_id, user_email, expires_at')
       .eq('session_token', sessionToken)
       .maybeSingle();
 
@@ -34,7 +33,7 @@ export default async function handler(req, res) {
     // Get user info
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('id, email, username, avatar_url, created_at, online')
+      .select('id, email, username, avatar_url, created_at, online, video_count, bio, location')
       .eq('id', session.user_id)
       .maybeSingle();
 
@@ -42,40 +41,16 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Get user stats
-    const { count: videoCount } = await supabase
-      .from('videos')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id);
-
-    const { count: commentCount } = await supabase
-      .from('comments')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id);
-
-    // Get total likes on user's videos
-    const { data: userVideos } = await supabase
-      .from('videos')
-      .select('id')
-      .eq('user_id', user.id);
-
-    let totalLikes = 0;
-    if (userVideos && userVideos.length > 0) {
-      const videoIds = userVideos.map(v => v.id);
-      const { count: likesCount } = await supabase
-        .from('likes')
-        .select('*', { count: 'exact', head: true })
-        .in('video_id', videoIds);
-      totalLikes = likesCount || 0;
-    }
-
     return res.status(200).json({
-      ...user,
-      stats: {
-        videos: videoCount || 0,
-        comments: commentCount || 0,
-        likes: totalLikes,
-      }
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      avatar_url: user.avatar_url,
+      created_at: user.created_at,
+      online: user.online,
+      video_count: user.video_count || 0,
+      bio: user.bio,
+      location: user.location
     });
   } catch (err) {
     console.error('Me API error:', err);
