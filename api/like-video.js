@@ -1,3 +1,4 @@
+// pages/api/like-video.js (UPDATED)
 import { createClient } from '@supabase/supabase-js';
 import cookie from 'cookie';
 
@@ -77,7 +78,7 @@ export default async function handler(req, res) {
     // Verify video exists
     const { data: video, error: videoError } = await supabase
       .from('videos')
-      .select('id, user_id, title')
+      .select('id, user_id, title, likes_count')
       .eq('id', videoId)
       .maybeSingle();
 
@@ -93,27 +94,34 @@ export default async function handler(req, res) {
       .eq('id', video.user_id)
       .maybeSingle();
 
+    // Check if already liked
+    const { data: existingLike, error: checkError } = await supabase
+      .from('likes')
+      .select('id')
+      .eq('user_email', userEmail)
+      .eq('target_type', 'video')
+      .eq('target_id', videoId)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Check like error:', checkError);
+      return res.status(500).json({ success: false, error: 'Error checking like status' });
+    }
+
+    const alreadyLiked = !!existingLike;
+    
+    // Handle like/unlike action
     if (action === 'like') {
-      // Check if already liked
-      // Your likes table structure: user_email, target_type, target_id
-      const { data: existingLike, error: checkError } = await supabase
-        .from('likes')
-        .select('id')
-        .eq('user_email', userEmail)
-        .eq('target_type', 'video')
-        .eq('target_id', videoId)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Check like error:', checkError);
-        return res.status(500).json({ success: false, error: 'Error checking like status' });
+      if (alreadyLiked) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Already liked this video',
+          likes: await getLikeCount(videoId),
+          liked: true
+        });
       }
 
-      if (existingLike) {
-        return res.status(400).json({ success: false, error: 'Already liked this video' });
-      }
-
-      // Add like - matches your schema: user_email, target_type, target_id
+      // Add like
       const { error: insertError } = await supabase
         .from('likes')
         .insert({
@@ -157,6 +165,15 @@ export default async function handler(req, res) {
       }
 
     } else if (action === 'unlike') {
+      if (!alreadyLiked) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'You have not liked this video',
+          likes: await getLikeCount(videoId),
+          liked: false
+        });
+      }
+
       // Remove like
       const { error: deleteError } = await supabase
         .from('likes')
@@ -176,40 +193,26 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: 'Invalid action. Use "like" or "unlike"' });
     }
 
-    // Get updated like count for this video
-    const { count: likeCount, error: countError } = await supabase
-      .from('likes')
-      .select('*', { count: 'exact', head: true })
-      .eq('target_type', 'video')
-      .eq('target_id', videoId);
-
-    if (countError) {
-      console.error('Count error:', countError);
-      return res.status(500).json({ success: false, error: 'Failed to get like count' });
-    }
-
-    // Check if user currently likes the video
-    const { data: currentUserLike } = await supabase
-      .from('likes')
-      .select('id')
-      .eq('user_email', userEmail)
-      .eq('target_type', 'video')
-      .eq('target_id', videoId)
-      .maybeSingle();
-
-    // Update video likes count if you want to cache it (optional)
+    // Get updated like count
+    const likeCount = await getLikeCount(videoId);
+    
+    // Create a cached likes_count column in videos table for performance
     try {
-      await supabase
+      // Check if videos table has likes_count column
+      const { error: updateError } = await supabase
         .from('videos')
         .update({ 
-          // If you have a likes_count column, update it
-          // likes_count: likeCount || 0,
           updated_at: new Date().toISOString()
+          // If you add a likes_count column later, uncomment this:
+          // likes_count: likeCount
         })
         .eq('id', videoId);
+
+      if (updateError) {
+        console.error('Failed to update video timestamp:', updateError);
+      }
     } catch (updateError) {
       console.error('Failed to update video:', updateError);
-      // Continue anyway - this is optional
     }
 
     console.log('✅ Like operation completed successfully');
@@ -217,8 +220,8 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       message: action === 'like' ? 'Video liked successfully' : 'Video unliked successfully',
-      likes: likeCount || 0,
-      liked: !!currentUserLike,
+      likes: likeCount,
+      liked: action === 'like', // Returns true if liked, false if unliked
       video_id: videoId,
       user_email: userEmail
     });
@@ -230,5 +233,26 @@ export default async function handler(req, res) {
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
+  }
+}
+
+// Helper function to get like count
+async function getLikeCount(videoId) {
+  try {
+    const { count, error } = await supabase
+      .from('likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('target_type', 'video')
+      .eq('target_id', videoId);
+
+    if (error) {
+      console.error('Count error:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (err) {
+    console.error('Error getting like count:', err);
+    return 0;
   }
 }
