@@ -1,4 +1,4 @@
-// pages/api/view-videos.js (CORRECTED)
+// pages/api/view-videos.js (UPDATED FOR REAL-TIME)
 import { createClient } from '@supabase/supabase-js';
 import cookie from 'cookie';
 
@@ -86,6 +86,14 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: error.message });
       }
 
+      // ALSO UPDATE VIDEO TIMESTAMP for real-time detection
+      await supabase
+        .from('videos')
+        .update({
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', videoId);
+
       // Send notification to video owner if not commenting on own video
       if (video.user_id !== userId) {
         await supabase
@@ -115,7 +123,151 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       console.log('📹 GET request - fetching videos');
       
-      // Get videos from database
+      const { statsOnly, ids, since, videoId: singleVideoId } = req.query;
+      
+      // ========== STATS ONLY MODE (for polling/real-time updates) ==========
+      if (statsOnly === 'true' && ids) {
+        console.log(`📊 STATS ONLY MODE - Getting stats for videos since ${since || 'beginning'}`);
+        
+        const videoIds = ids.split(',');
+        const sinceTime = since ? parseInt(since) : Date.now() - 30000; // Default: last 30 seconds
+        
+        // Get videos updated since the given time
+        const { data: videos, error: videosError } = await supabase
+          .from('videos')
+          .select(`
+            id,
+            views,
+            likes_count,
+            updated_at
+          `)
+          .in('id', videoIds)
+          .gt('updated_at', new Date(sinceTime).toISOString())
+          .order('updated_at', { ascending: false });
+        
+        if (videosError) {
+          console.error('❌ Stats fetch error:', videosError);
+          return res.status(500).json({ error: videosError.message });
+        }
+        
+        if (!videos || videos.length === 0) {
+          console.log('📊 No video updates since last check');
+          return res.status(200).json([]);
+        }
+        
+        // Get additional stats for each updated video
+        const result = await Promise.all(
+          videos.map(async (video) => {
+            // Get like count (double-check from likes table)
+            const { count: likes } = await supabase
+              .from('likes')
+              .select('*', { count: 'exact', head: true })
+              .eq('target_id', video.id)
+              .eq('target_type', 'video');
+            
+            // Check if current user liked this video
+            let hasLiked = false;
+            if (userEmail) {
+              const { data: userLike } = await supabase
+                .from('likes')
+                .select('id')
+                .eq('target_id', video.id)
+                .eq('target_type', 'video')
+                .eq('user_email', userEmail)
+                .maybeSingle();
+              hasLiked = !!userLike;
+            }
+            
+            // Get comment count
+            const { count: commentCount } = await supabase
+              .from('comments')
+              .select('*', { count: 'exact', head: true })
+              .eq('video_id', video.id);
+            
+            // Get new comments since last check
+            const { data: newComments } = await supabase
+              .from('comments')
+              .select(`
+                id,
+                user_id,
+                video_id,
+                comment_text,
+                created_at,
+                users ( id, username, avatar_url )
+              `)
+              .eq('video_id', video.id)
+              .gt('created_at', new Date(sinceTime).toISOString())
+              .order('created_at', { ascending: true });
+            
+            return {
+              id: video.id,
+              views: video.views || 0,
+              likes: video.likes_count || likes || 0,
+              hasLiked,
+              commentCount: commentCount || 0,
+              newComments: newComments || [],
+              updated_at: video.updated_at
+            };
+          })
+        );
+        
+        console.log(`📊 Returning stats for ${result.length} updated videos`);
+        return res.status(200).json(result);
+      }
+      
+      // ========== SINGLE VIDEO REQUEST ==========
+      if (singleVideoId) {
+        console.log(`🎬 Single video requested: ${singleVideoId}`);
+        
+        const { data: videos, error: videosError } = await supabase
+          .from('videos')
+          .select(`
+            id,
+            user_id,
+            title,
+            description,
+            video_url,
+            cover_url,
+            original_filename,
+            mime_type,
+            size,
+            views,
+            likes_count,
+            created_at,
+            users ( id, email, username, avatar_url, online )
+          `)
+          .eq('id', singleVideoId)
+          .limit(1);
+
+        if (videosError || !videos || videos.length === 0) {
+          return res.status(404).json({ error: 'Video not found' });
+        }
+
+        const video = videos[0];
+        
+        // Process the single video
+        const result = await processVideoData(video, userEmail);
+        
+        // INCREMENT VIEW COUNT for single video view
+        console.log(`📹 Incrementing view count for video ${video.id}`);
+        await supabase
+          .from('videos')
+          .update({ 
+            views: (video.views || 0) + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', video.id);
+        
+        // Update the views in response
+        result.views = (video.views || 0) + 1;
+        
+        return res.status(200).json(result);
+      }
+      
+      // ========== ALL VIDEOS REQUEST ==========
+      console.log('📹 Getting all videos');
+      
+      // Get all videos from database
       const { data: videos, error: videosError } = await supabase
         .from('videos')
         .select(`
@@ -129,6 +281,7 @@ export default async function handler(req, res) {
           mime_type,
           size,
           views,
+          likes_count,
           created_at,
           users ( id, email, username, avatar_url, online )
         `)
@@ -149,129 +302,8 @@ export default async function handler(req, res) {
       
       // Build response with additional data
       const result = await Promise.all(
-        videos.map(async (video, index) => {
-          console.log(`📹 Processing video ${index + 1}/${videos.length}: ${video.title}`);
-          
-          // GET LIKES COUNT - CORRECTED FOR YOUR SCHEMA
-          const { count: likes, error: likesError } = await supabase
-            .from('likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('target_id', video.id)        // Your schema uses target_id
-            .eq('target_type', 'video');      // Your schema uses target_type
-
-          if (likesError) {
-            console.error('❌ Likes count error:', likesError);
-          }
-
-          // CHECK IF USER LIKED - CORRECTED FOR YOUR SCHEMA
-          let hasLiked = false;
-          if (userEmail) {
-            const { data: userLike, error: userLikeError } = await supabase
-              .from('likes')
-              .select('id')
-              .eq('target_id', video.id)        // Your schema uses target_id
-              .eq('target_type', 'video')       // Your schema uses target_type
-              .eq('user_email', userEmail)      // Your schema uses user_email
-              .maybeSingle();
-
-            if (!userLikeError) {
-              hasLiked = !!userLike;
-            }
-          }
-
-          console.log(`📹 Likes: ${likes || 0}, User liked: ${hasLiked}, Views: ${video.views || 0}`);
-
-          // INCREMENT VIEW COUNT - CORRECTED (always increment on GET)
-          // This ensures views are counted when someone watches the video
-          console.log(`📹 Incrementing view count for video ${video.id}`);
-          const { error: viewError } = await supabase
-            .from('videos')
-            .update({ 
-              views: (video.views || 0) + 1,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', video.id);
-
-          if (viewError) {
-            console.error('❌ View increment error:', viewError);
-          } else {
-            console.log(`✅ View count incremented for video ${video.id}`);
-          }
-
-          // Handle URLs
-          let videoUrl = video.video_url;
-          let coverUrl = video.cover_url;
-          
-          // If URLs are relative paths, create public URLs
-          if (videoUrl && !videoUrl.startsWith('http')) {
-            console.log(`📹 Creating public URL for relative video path: ${videoUrl}`);
-            try {
-              const { data: publicUrlData } = supabase.storage
-                .from('videos')
-                .getPublicUrl(videoUrl);
-              videoUrl = publicUrlData.publicUrl;
-            } catch (error) {
-              console.error('❌ Error creating video URL:', error);
-            }
-          }
-          
-          if (coverUrl && !coverUrl.startsWith('http')) {
-            console.log(`📹 Creating public URL for relative cover path: ${coverUrl}`);
-            try {
-              const { data: publicUrlData } = supabase.storage
-                .from('covers')
-                .getPublicUrl(coverUrl);
-              coverUrl = publicUrlData.publicUrl;
-            } catch (error) {
-              console.error('❌ Error creating cover URL:', error);
-            }
-          }
-
-          console.log(`📹 Final video URL: ${videoUrl}`);
-          console.log(`📹 Final cover URL: ${coverUrl}`);
-
-          // Get comments
-          const { data: comments, error: commentsError } = await supabase
-            .from('comments')
-            .select(`
-              id,
-              user_id,
-              video_id,
-              comment_text,
-              created_at,
-              edited_at,
-              users ( id, username, email, avatar_url )
-            `)
-            .eq('video_id', video.id)
-            .order('created_at', { ascending: true });
-
-          if (commentsError) {
-            console.error('❌ Comments fetch error:', commentsError);
-          }
-
-          console.log(`📹 Comments: ${comments?.length || 0}`);
-
-          return {
-            id: video.id,
-            title: video.title,
-            description: video.description,
-            likes: likes || 0,
-            hasLiked,
-            views: (video.views || 0) + 1, // Return incremented view count
-            uploaded_at: video.created_at,
-            videoUrl,
-            coverUrl,
-            user: video.users,
-            comments: (comments || []).map(c => ({
-              id: c.id,
-              user_id: c.user_id,
-              video_id: c.video_id,
-              text: c.comment_text,
-              created_at: c.created_at,
-              edited_at: c.edited_at,
-              user: c.users
-            }))
-          };
+        videos.map(async (video) => {
+          return await processVideoData(video, userEmail);
         })
       );
 
@@ -286,4 +318,113 @@ export default async function handler(req, res) {
     console.error('❌❌❌ Error stack:', err.stack);
     res.status(500).json({ error: err.message });
   }
+}
+
+// Helper function to process video data
+async function processVideoData(video, userEmail) {
+  console.log(`📹 Processing video: ${video.title}`);
+  
+  // Get like count from likes table
+  const { count: likes, error: likesError } = await supabase
+    .from('likes')
+    .select('*', { count: 'exact', head: true })
+    .eq('target_id', video.id)
+    .eq('target_type', 'video');
+
+  if (likesError) {
+    console.error('❌ Likes count error:', likesError);
+  }
+
+  // Check if current user has liked this video
+  let hasLiked = false;
+  if (userEmail) {
+    const { data: userLike, error: userLikeError } = await supabase
+      .from('likes')
+      .select('id')
+      .eq('target_id', video.id)
+      .eq('target_type', 'video')
+      .eq('user_email', userEmail)
+      .maybeSingle();
+
+    if (!userLikeError) {
+      hasLiked = !!userLike;
+    }
+  }
+
+  console.log(`📹 Likes: ${likes || 0}, User liked: ${hasLiked}, Views: ${video.views || 0}`);
+
+  // Handle URLs
+  let videoUrl = video.video_url;
+  let coverUrl = video.cover_url;
+  
+  // If URLs are relative paths, create public URLs
+  if (videoUrl && !videoUrl.startsWith('http')) {
+    console.log(`📹 Creating public URL for relative video path: ${videoUrl}`);
+    try {
+      const { data: publicUrlData } = supabase.storage
+        .from('videos')
+        .getPublicUrl(videoUrl);
+      videoUrl = publicUrlData.publicUrl;
+    } catch (error) {
+      console.error('❌ Error creating video URL:', error);
+    }
+  }
+  
+  if (coverUrl && !coverUrl.startsWith('http')) {
+    console.log(`📹 Creating public URL for relative cover path: ${coverUrl}`);
+    try {
+      const { data: publicUrlData } = supabase.storage
+        .from('covers')
+        .getPublicUrl(coverUrl);
+      coverUrl = publicUrlData.publicUrl;
+    } catch (error) {
+      console.error('❌ Error creating cover URL:', error);
+    }
+  }
+
+  console.log(`📹 Final video URL: ${videoUrl}`);
+  console.log(`📹 Final cover URL: ${coverUrl}`);
+
+  // Get comments
+  const { data: comments, error: commentsError } = await supabase
+    .from('comments')
+    .select(`
+      id,
+      user_id,
+      video_id,
+      comment_text,
+      created_at,
+      edited_at,
+      users ( id, username, email, avatar_url )
+    `)
+    .eq('video_id', video.id)
+    .order('created_at', { ascending: true });
+
+  if (commentsError) {
+    console.error('❌ Comments fetch error:', commentsError);
+  }
+
+  console.log(`📹 Comments: ${comments?.length || 0}`);
+
+  return {
+    id: video.id,
+    title: video.title,
+    description: video.description,
+    likes: video.likes_count || likes || 0, // Use cached count if available
+    hasLiked,
+    views: video.views || 0,
+    uploaded_at: video.created_at,
+    videoUrl,
+    coverUrl,
+    user: video.users,
+    comments: (comments || []).map(c => ({
+      id: c.id,
+      user_id: c.user_id,
+      video_id: c.video_id,
+      text: c.comment_text,
+      created_at: c.created_at,
+      edited_at: c.edited_at,
+      user: c.users
+    }))
+  };
 }
