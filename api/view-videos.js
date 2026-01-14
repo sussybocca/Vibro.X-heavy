@@ -1,4 +1,4 @@
-// pages/api/view-videos.js (FIXED VERSION)
+// pages/api/view-videos.js (FIXED - HANDLES since PARAMETER CORRECTLY)
 import { createClient } from '@supabase/supabase-js';
 import cookie from 'cookie';
 
@@ -127,10 +127,24 @@ export default async function handler(req, res) {
       
       // ========== STATS ONLY MODE (for polling/real-time updates) ==========
       if (statsOnly === 'true' && ids) {
-        console.log(`📊 STATS ONLY MODE - Getting stats for videos since ${since || 'beginning'}`);
+        console.log(`📊 STATS ONLY MODE - Getting stats for videos`);
         
         const videoIds = ids.split(',');
-        const sinceTime = since ? parseInt(since) : Date.now() - 30000; // Default: last 30 seconds
+        
+        // FIX: Properly handle the since parameter
+        let sinceTime;
+        if (since) {
+          const parsedSince = parseInt(since);
+          if (!isNaN(parsedSince) && parsedSince > 0) {
+            sinceTime = new Date(parsedSince).toISOString();
+          } else {
+            sinceTime = new Date(Date.now() - 30000).toISOString(); // Default: last 30 seconds
+          }
+        } else {
+          sinceTime = new Date(Date.now() - 30000).toISOString(); // Default: last 30 seconds
+        }
+        
+        console.log(`📊 Since time: ${sinceTime}`);
         
         // Get videos updated since the given time
         const { data: videos, error: videosError } = await supabase
@@ -142,7 +156,7 @@ export default async function handler(req, res) {
             updated_at
           `)
           .in('id', videoIds)
-          .gt('updated_at', new Date(sinceTime).toISOString())
+          .gte('updated_at', sinceTime)  // Changed from gt to gte (greater than or equal)
           .order('updated_at', { ascending: false });
         
         if (videosError) {
@@ -155,59 +169,74 @@ export default async function handler(req, res) {
           return res.status(200).json([]);
         }
         
+        console.log(`📊 Found ${videos.length} updated videos`);
+        
         // Get additional stats for each updated video
         const result = await Promise.all(
           videos.map(async (video) => {
-            // Get like count (double-check from likes table)
-            const { count: likes } = await supabase
-              .from('likes')
-              .select('*', { count: 'exact', head: true })
-              .eq('target_id', video.id)
-              .eq('target_type', 'video');
-            
-            // Check if current user liked this video
-            let hasLiked = false;
-            if (userEmail) {
-              const { data: userLike } = await supabase
+            try {
+              // Get like count (double-check from likes table)
+              const { count: likes } = await supabase
                 .from('likes')
-                .select('id')
+                .select('*', { count: 'exact', head: true })
                 .eq('target_id', video.id)
-                .eq('target_type', 'video')
-                .eq('user_email', userEmail)
-                .maybeSingle();
-              hasLiked = !!userLike;
+                .eq('target_type', 'video');
+              
+              // Check if current user liked this video
+              let hasLiked = false;
+              if (userEmail) {
+                const { data: userLike } = await supabase
+                  .from('likes')
+                  .select('id')
+                  .eq('target_id', video.id)
+                  .eq('target_type', 'video')
+                  .eq('user_email', userEmail)
+                  .maybeSingle();
+                hasLiked = !!userLike;
+              }
+              
+              // Get comment count
+              const { count: commentCount } = await supabase
+                .from('comments')
+                .select('*', { count: 'exact', head: true })
+                .eq('video_id', video.id);
+              
+              // Get new comments since last check
+              const { data: newComments } = await supabase
+                .from('comments')
+                .select(`
+                  id,
+                  user_id,
+                  video_id,
+                  comment_text,
+                  created_at,
+                  users ( id, username, avatar_url )
+                `)
+                .eq('video_id', video.id)
+                .gte('created_at', sinceTime)
+                .order('created_at', { ascending: true });
+              
+              return {
+                id: video.id,
+                views: video.views || 0,
+                likes: video.likes_count || likes || 0,
+                hasLiked,
+                commentCount: commentCount || 0,
+                newComments: newComments || [],
+                updated_at: video.updated_at
+              };
+            } catch (err) {
+              console.error(`❌ Error processing video ${video.id}:`, err);
+              return {
+                id: video.id,
+                views: video.views || 0,
+                likes: video.likes_count || 0,
+                hasLiked: false,
+                commentCount: 0,
+                newComments: [],
+                updated_at: video.updated_at
+              };
             }
-            
-            // Get comment count
-            const { count: commentCount } = await supabase
-              .from('comments')
-              .select('*', { count: 'exact', head: true })
-              .eq('video_id', video.id);
-            
-            // Get new comments since last check
-            const { data: newComments } = await supabase
-              .from('comments')
-              .select(`
-                id,
-                user_id,
-                video_id,
-                comment_text,
-                created_at,
-                users ( id, username, avatar_url )
-              `)
-              .eq('video_id', video.id)
-              .gt('created_at', new Date(sinceTime).toISOString())
-              .order('created_at', { ascending: true });
-            
-            return {
-              id: video.id,
-              views: video.views || 0,
-              likes: video.likes_count || likes || 0,
-              hasLiked,
-              commentCount: commentCount || 0,
-              newComments: newComments || [],
-              updated_at: video.updated_at
-            };
           })
         );
         
@@ -306,16 +335,6 @@ export default async function handler(req, res) {
 
       console.log(`📹 Found ${videos.length} videos`);
       
-      // DEBUG: Log first video's views
-      if (videos.length > 0) {
-        console.log(`🔍 First video views debug:`, {
-          id: videos[0].id,
-          title: videos[0].title,
-          views: videos[0].views,
-          viewsType: typeof videos[0].views
-        });
-      }
-      
       // Build response with additional data
       const result = await Promise.all(
         videos.map(async (video) => {
@@ -332,116 +351,128 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('❌❌❌ Video API crash:', err);
     console.error('❌❌❌ Error stack:', err.stack);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 }
 
 // Helper function to process video data
 async function processVideoData(video, userEmail) {
-  console.log(`📹 Processing video: ${video.title}`);
-  console.log(`🔍 Video views from DB: ${video.views} (type: ${typeof video.views})`);
-  
-  // Get like count from likes table
-  const { count: likes, error: likesError } = await supabase
-    .from('likes')
-    .select('*', { count: 'exact', head: true })
-    .eq('target_id', video.id)
-    .eq('target_type', 'video');
-
-  if (likesError) {
-    console.error('❌ Likes count error:', likesError);
-  }
-
-  // Check if current user has liked this video
-  let hasLiked = false;
-  if (userEmail) {
-    const { data: userLike, error: userLikeError } = await supabase
+  try {
+    console.log(`📹 Processing video: ${video.title}`);
+    
+    // Get like count from likes table
+    const { count: likes, error: likesError } = await supabase
       .from('likes')
-      .select('id')
+      .select('*', { count: 'exact', head: true })
       .eq('target_id', video.id)
-      .eq('target_type', 'video')
-      .eq('user_email', userEmail)
-      .maybeSingle();
+      .eq('target_type', 'video');
 
-    if (!userLikeError) {
-      hasLiked = !!userLike;
+    if (likesError) {
+      console.error('❌ Likes count error:', likesError);
     }
-  }
 
-  console.log(`📹 Likes: ${likes || 0}, User liked: ${hasLiked}, Views: ${video.views || 0}`);
+    // Check if current user has liked this video
+    let hasLiked = false;
+    if (userEmail) {
+      const { data: userLike, error: userLikeError } = await supabase
+        .from('likes')
+        .select('id')
+        .eq('target_id', video.id)
+        .eq('target_type', 'video')
+        .eq('user_email', userEmail)
+        .maybeSingle();
 
-  // Handle URLs
-  let videoUrl = video.video_url;
-  let coverUrl = video.cover_url;
-  
-  // If URLs are relative paths, create public URLs
-  if (videoUrl && !videoUrl.startsWith('http')) {
-    console.log(`📹 Creating public URL for relative video path: ${videoUrl}`);
-    try {
-      const { data: publicUrlData } = supabase.storage
-        .from('videos')
-        .getPublicUrl(videoUrl);
-      videoUrl = publicUrlData.publicUrl;
-    } catch (error) {
-      console.error('❌ Error creating video URL:', error);
+      if (!userLikeError) {
+        hasLiked = !!userLike;
+      }
     }
-  }
-  
-  if (coverUrl && !coverUrl.startsWith('http')) {
-    console.log(`📹 Creating public URL for relative cover path: ${coverUrl}`);
-    try {
-      const { data: publicUrlData } = supabase.storage
-        .from('covers')
-        .getPublicUrl(coverUrl);
-      coverUrl = publicUrlData.publicUrl;
-    } catch (error) {
-      console.error('❌ Error creating cover URL:', error);
+
+    console.log(`📹 Likes: ${likes || 0}, User liked: ${hasLiked}, Views: ${video.views || 0}`);
+
+    // Handle URLs
+    let videoUrl = video.video_url;
+    let coverUrl = video.cover_url;
+    
+    // If URLs are relative paths, create public URLs
+    if (videoUrl && !videoUrl.startsWith('http')) {
+      console.log(`📹 Creating public URL for relative video path: ${videoUrl}`);
+      try {
+        const { data: publicUrlData } = supabase.storage
+          .from('videos')
+          .getPublicUrl(videoUrl);
+        videoUrl = publicUrlData.publicUrl;
+      } catch (error) {
+        console.error('❌ Error creating video URL:', error);
+      }
     }
+    
+    if (coverUrl && !coverUrl.startsWith('http')) {
+      console.log(`📹 Creating public URL for relative cover path: ${coverUrl}`);
+      try {
+        const { data: publicUrlData } = supabase.storage
+          .from('covers')
+          .getPublicUrl(coverUrl);
+        coverUrl = publicUrlData.publicUrl;
+      } catch (error) {
+        console.error('❌ Error creating cover URL:', error);
+      }
+    }
+
+    // Get comments
+    const { data: comments, error: commentsError } = await supabase
+      .from('comments')
+      .select(`
+        id,
+        user_id,
+        video_id,
+        comment_text,
+        created_at,
+        edited_at,
+        users ( id, username, email, avatar_url )
+      `)
+      .eq('video_id', video.id)
+      .order('created_at', { ascending: true });
+
+    if (commentsError) {
+      console.error('❌ Comments fetch error:', commentsError);
+    }
+
+    return {
+      id: video.id,
+      title: video.title,
+      description: video.description,
+      likes: video.likes_count || likes || 0,
+      hasLiked,
+      views: video.views || 0,
+      uploaded_at: video.created_at,
+      videoUrl,
+      coverUrl,
+      user: video.users,
+      comments: (comments || []).map(c => ({
+        id: c.id,
+        user_id: c.user_id,
+        video_id: c.video_id,
+        text: c.comment_text,
+        created_at: c.created_at,
+        edited_at: c.edited_at,
+        user: c.users
+      }))
+    };
+  } catch (err) {
+    console.error(`❌ Error in processVideoData for video ${video.id}:`, err);
+    // Return basic video data even if there's an error
+    return {
+      id: video.id,
+      title: video.title,
+      description: video.description,
+      likes: video.likes_count || 0,
+      hasLiked: false,
+      views: video.views || 0,
+      uploaded_at: video.created_at,
+      videoUrl: video.video_url,
+      coverUrl: video.cover_url,
+      user: video.users,
+      comments: []
+    };
   }
-
-  console.log(`📹 Final video URL: ${videoUrl}`);
-  console.log(`📹 Final cover URL: ${coverUrl}`);
-
-  // Get comments
-  const { data: comments, error: commentsError } = await supabase
-    .from('comments')
-    .select(`
-      id,
-      user_id,
-      video_id,
-      comment_text,
-      created_at,
-      edited_at,
-      users ( id, username, email, avatar_url )
-    `)
-    .eq('video_id', video.id)
-    .order('created_at', { ascending: true });
-
-  if (commentsError) {
-    console.error('❌ Comments fetch error:', commentsError);
-  }
-
-  console.log(`📹 Comments: ${comments?.length || 0}`);
-
-  return {
-    id: video.id,
-    title: video.title,
-    description: video.description,
-    likes: video.likes_count || likes || 0, // Use cached count if available
-    hasLiked,
-    views: video.views || 0, // This should work now
-    uploaded_at: video.created_at,
-    videoUrl,
-    coverUrl,
-    user: video.users,
-    comments: (comments || []).map(c => ({
-      id: c.id,
-      user_id: c.user_id,
-      video_id: c.video_id,
-      text: c.comment_text,
-      created_at: c.created_at,
-      edited_at: c.edited_at,
-      user: c.users
-    }))
-  };
 }
