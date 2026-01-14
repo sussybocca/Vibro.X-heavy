@@ -491,6 +491,10 @@ let observer;
 let currentUser = null;
 const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
 
+// REAL-TIME POLLING VARIABLES
+let lastUpdateCheck = Date.now();
+let pollingInterval = null;
+
 // Notification system
 function showNotification(message, type = 'info') {
     const notification = document.getElementById('notification');
@@ -512,25 +516,31 @@ async function loadCurrentUser() {
         });
         
         if (res.ok) {
-            currentUser = await res.json();
-            updateUserProfile(currentUser);
-            document.getElementById('logoutBtn').style.display = 'block';
+            const data = await res.json();
+            if (data.success && data.authenticated) {
+                currentUser = data.user;
+                updateUserProfile(currentUser);
+                document.getElementById('logoutBtn').style.display = 'block';
+            } else {
+                currentUser = null;
+                document.getElementById('logoutBtn').style.display = 'none';
+            }
         } else {
-            // Guest user
             currentUser = null;
             document.getElementById('logoutBtn').style.display = 'none';
         }
     } catch (err) {
         console.error('Failed to load user:', err);
         currentUser = null;
+        document.getElementById('logoutBtn').style.display = 'none';
     }
 }
 
 // Update user profile in header
 function updateUserProfile(user) {
-    if (user) {
-        document.getElementById('userAvatar').src = user.avatar_url || 'https://via.placeholder.com/44';
-        document.getElementById('username').textContent = user.username || 'User';
+    if (user && user.authenticated !== false) {
+        document.getElementById('userAvatar').src = user.avatar_url || user.profile_picture || 'https://via.placeholder.com/44';
+        document.getElementById('username').textContent = user.username || user.email || 'User';
         document.getElementById('userEmail').textContent = user.email || '';
     } else {
         document.getElementById('userAvatar').src = 'https://via.placeholder.com/44';
@@ -608,20 +618,22 @@ async function likeVideo(videoId, isLiked) {
         
         if (res.ok) {
             const data = await res.json();
-            // Update the UI
-            const videoItem = document.querySelector(`.video-item .like-btn[data-video-id="${videoId}"]`)?.closest('.video-item');
-            const likeBtn = videoItem?.querySelector('.like-btn');
-            const likeCount = videoItem?.querySelector('.like-count');
-            
-            if (likeBtn && likeCount) {
-                if (data.liked) {
-                    likeBtn.classList.add('liked');
-                    likeBtn.innerHTML = `<i class="fas fa-heart"></i> Liked`;
-                } else {
-                    likeBtn.classList.remove('liked');
-                    likeBtn.innerHTML = `<i class="far fa-heart"></i> Like`;
+            // Update the UI immediately
+            const videoItem = document.querySelector(`.video-item[data-video-id="${videoId}"]`);
+            if (videoItem) {
+                const likeBtn = videoItem.querySelector('.like-btn');
+                const likeCount = videoItem.querySelector('.like-count');
+                
+                if (likeBtn && likeCount) {
+                    if (data.liked) {
+                        likeBtn.classList.add('liked');
+                        likeBtn.innerHTML = `<i class="fas fa-heart"></i> Liked`;
+                    } else {
+                        likeBtn.classList.remove('liked');
+                        likeBtn.innerHTML = `<i class="far fa-heart"></i> Like`;
+                    }
+                    likeCount.textContent = data.likes || 0;
                 }
-                likeCount.textContent = data.likes;
             }
             
             showNotification(isLiked ? 'Video unliked' : 'Video liked!');
@@ -781,7 +793,108 @@ function formatDate(dateString) {
     return date.toLocaleDateString();
 }
 
-// Render videos
+// =============== REAL-TIME POLLING FUNCTIONS ===============
+function startRealTimePolling() {
+    if (pollingInterval) clearInterval(pollingInterval);
+    
+    pollingInterval = setInterval(async () => {
+        if (!videosCache || videosCache.length === 0) return;
+        
+        try {
+            // Get video IDs for polling
+            const videoIds = videosCache.map(v => v.id).join(',');
+            
+            // Fetch updated stats
+            const response = await fetch(`/api/view-videos?statsOnly=true&ids=${videoIds}&since=${lastUpdateCheck}`, {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const updates = await response.json();
+                
+                if (updates && updates.length > 0) {
+                    updates.forEach(update => {
+                        updateVideoStatsInUI(update);
+                    });
+                }
+                
+                lastUpdateCheck = Date.now();
+            }
+        } catch (err) {
+            console.error('Polling error:', err);
+        }
+    }, 3000); // Poll every 3 seconds
+}
+
+function updateVideoStatsInUI(stats) {
+    const videoElement = document.querySelector(`.video-item[data-video-id="${stats.id}"]`);
+    if (!videoElement) return;
+    
+    // Update views
+    const viewsElement = videoElement.querySelector('.views-count');
+    if (viewsElement && stats.views !== undefined) {
+        viewsElement.textContent = stats.views;
+    }
+    
+    // Update likes count and button
+    const likeCountElement = videoElement.querySelector('.like-count');
+    const likeButton = videoElement.querySelector('.like-btn');
+    
+    if (likeCountElement && stats.likes !== undefined) {
+        likeCountElement.textContent = stats.likes;
+    }
+    
+    if (likeButton && stats.hasLiked !== undefined) {
+        if (stats.hasLiked) {
+            likeButton.classList.add('liked');
+            likeButton.innerHTML = `<i class="fas fa-heart"></i> Liked`;
+            likeButton.setAttribute('onclick', `likeVideo('${stats.id}', true)`);
+        } else {
+            likeButton.classList.remove('liked');
+            likeButton.innerHTML = `<i class="far fa-heart"></i> Like`;
+            likeButton.setAttribute('onclick', `likeVideo('${stats.id}', false)`);
+        }
+    }
+    
+    // Update comment count
+    const commentStat = videoElement.querySelector('.comments-count');
+    if (commentStat && stats.commentCount !== undefined) {
+        commentStat.textContent = stats.commentCount;
+    }
+    
+    // Add new comments if any
+    if (stats.newComments && stats.newComments.length > 0) {
+        const commentsSection = videoElement.querySelector('.commentsSection');
+        if (commentsSection) {
+            stats.newComments.forEach(comment => {
+                // Check if comment already exists
+                const existingComment = commentsSection.querySelector(`[data-comment-id="${comment.id}"]`);
+                if (!existingComment) {
+                    const commentDiv = document.createElement('div');
+                    commentDiv.className = 'comment';
+                    commentDiv.setAttribute('data-comment-id', comment.id);
+                    
+                    const userAvatar = comment.users?.avatar_url || comment.users?.profile_picture || 'https://via.placeholder.com/28';
+                    const userName = comment.users?.username || comment.users?.email || 'User';
+                    
+                    commentDiv.innerHTML = `
+                        <div class="comment-user">
+                            <img src="${userAvatar}" alt="${userName}">
+                            <span>${userName}</span>
+                        </div>
+                        <div class="comment-text">${comment.comment_text}</div>
+                        <div class="comment-meta">
+                            <span>${formatDate(comment.created_at)}</span>
+                        </div>
+                    `;
+                    commentsSection.appendChild(commentDiv);
+                }
+            });
+        }
+    }
+}
+
+// =============== RENDER VIDEOS FUNCTION ===============
 function renderVideos(videos) {
     const list = document.getElementById('videosList');
     const loading = document.getElementById('loadingVideos');
@@ -801,11 +914,17 @@ function renderVideos(videos) {
     batch.forEach(video => {
         const div = document.createElement('div'); 
         div.className = 'video-item';
+        div.setAttribute('data-video-id', video.id); // CRITICAL FOR POLLING
+        
+        // Get user info properly - check both avatar_url and profile_picture
+        const userAvatar = video.user?.avatar_url || video.user?.profile_picture || 'https://via.placeholder.com/42';
+        const userName = video.user?.username || video.user?.email || 'User';
+        
         div.innerHTML = `
             <div class="user-info">
-                <img src="${video.user?.avatar_url || 'https://via.placeholder.com/42'}" alt="${video.user?.username || 'User'}">
+                <img src="${userAvatar}" alt="${userName}">
                 <div class="user-details">
-                    <div class="username">${video.user?.username || 'User'}</div>
+                    <div class="username">${userName}</div>
                     <div class="upload-time">${formatDate(video.uploaded_at)} • ${video.likes || 0} likes</div>
                 </div>
             </div>
@@ -825,11 +944,11 @@ function renderVideos(videos) {
             <div class="video-stats">
                 <div class="stat">
                     <i class="fas fa-eye"></i>
-                    <span>${video.views || 0} views</span>
+                    <span class="views-count">${video.views || 0}</span> views
                 </div>
                 <div class="stat">
                     <i class="fas fa-comment"></i>
-                    <span>${video.comments?.length || 0} comments</span>
+                    <span class="comments-count">${video.comments?.length || 0}</span> comments
                 </div>
             </div>
             
@@ -887,10 +1006,15 @@ function renderVideos(videos) {
         (video.comments || []).forEach(c => {
             const cDiv = document.createElement('div'); 
             cDiv.className = 'comment';
+            cDiv.setAttribute('data-comment-id', c.id);
+            
+            const commentUserAvatar = c.user?.avatar_url || c.user?.profile_picture || 'https://via.placeholder.com/28';
+            const commentUserName = c.user?.username || c.user?.email || 'User';
+            
             cDiv.innerHTML = `
                 <div class="comment-user">
-                    <img src="${c.user?.avatar_url || 'https://via.placeholder.com/28'}" alt="${c.user?.username || 'User'}">
-                    <span>${c.user?.username || 'User'}</span>
+                    <img src="${commentUserAvatar}" alt="${commentUserName}">
+                    <span>${commentUserName}</span>
                 </div>
                 <div class="comment-text">${c.text || ''}</div>
                 <div class="comment-meta">
@@ -923,7 +1047,7 @@ function shareVideo(url) {
     }
 }
 
-// Post comment function - FIXED
+// Post comment function
 async function postComment(videoId) {
     if (!currentUser) {
         showNotification('Please sign in to comment', 'error');
@@ -931,7 +1055,7 @@ async function postComment(videoId) {
     }
     
     // Find the video item
-    const videoItem = document.querySelector(`.video-item .like-btn[data-video-id="${videoId}"]`)?.closest('.video-item');
+    const videoItem = document.querySelector(`.video-item[data-video-id="${videoId}"]`);
     
     if (!videoItem) {
         showNotification('Could not find video', 'error');
@@ -961,10 +1085,15 @@ async function postComment(videoId) {
             if (commentsDiv) {
                 const cDiv = document.createElement('div'); 
                 cDiv.className = 'comment';
+                cDiv.setAttribute('data-comment-id', comment.id);
+                
+                const userAvatar = comment.user?.avatar_url || currentUser.avatar_url || currentUser.profile_picture || 'https://via.placeholder.com/28';
+                const userName = comment.user?.username || currentUser.username || currentUser.email || 'User';
+                
                 cDiv.innerHTML = `
                     <div class="comment-user">
-                        <img src="${comment.user?.avatar_url || currentUser.avatar_url || 'https://via.placeholder.com/28'}" alt="${comment.user?.username || currentUser.username}">
-                        <span>${comment.user?.username || currentUser.username}</span>
+                        <img src="${userAvatar}" alt="${userName}">
+                        <span>${userName}</span>
                     </div>
                     <div class="comment-text">${comment.text}</div>
                     <div class="comment-meta">
@@ -977,10 +1106,10 @@ async function postComment(videoId) {
             input.value = '';
             
             // Update comment count
-            const commentStat = videoItem.querySelector('.stat:nth-child(2) span');
+            const commentStat = videoItem.querySelector('.comments-count');
             if (commentStat) {
                 const currentCount = parseInt(commentStat.textContent) || 0;
-                commentStat.textContent = `${currentCount + 1} comments`;
+                commentStat.textContent = currentCount + 1;
             }
             
             showNotification('Comment posted!');
@@ -1021,6 +1150,11 @@ async function loadVideos(reset = false) {
         if (loading && reset) loading.remove();
         
         renderVideos(videosCache);
+        
+        // Start real-time polling after loading videos
+        if (!pollingInterval) {
+            startRealTimePolling();
+        }
     } catch(err) { 
         showNotification('Failed to load videos: ' + err.message, 'error');
     }
@@ -1052,6 +1186,13 @@ document.getElementById('videoModal').addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeModal();
+    }
+});
+
+// Clean up polling on page unload
+window.addEventListener('beforeunload', () => {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
     }
 });
 </script>
