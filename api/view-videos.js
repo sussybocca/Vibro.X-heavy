@@ -1,4 +1,4 @@
-// pages/api/view-videos.js (COMPLETE VERSION WITH FULL FUNCTIONALITY)
+// pages/api/view-videos.js (UPDATED TO MATCH YOUR SCHEMA)
 import { createClient } from '@supabase/supabase-js';
 import cookie from 'cookie';
 
@@ -173,11 +173,11 @@ export default async function handler(req, res) {
         
         console.log(`📊 Found ${videos.length} updated videos`);
         
-        // Get additional stats for each updated video - FULL VERSION
+        // Get additional stats for each updated video - UPDATED FOR YOUR SCHEMA
         const result = await Promise.all(
           videos.map(async (video) => {
             try {
-              // Get like count (double-check from likes table)
+              // Get like count (double-check from likes table) - USING user_email NOT user_id
               const { count: likes, error: likesError } = await supabase
                 .from('likes')
                 .select('*', { count: 'exact', head: true })
@@ -188,7 +188,7 @@ export default async function handler(req, res) {
                 console.error(`❌ Likes count error for video ${video.id}:`, likesError);
               }
               
-              // Check if current user liked this video
+              // Check if current user liked this video - USING user_email
               let hasLiked = false;
               if (userEmail) {
                 const { data: userLike, error: userLikeError } = await supabase
@@ -196,7 +196,7 @@ export default async function handler(req, res) {
                   .select('id')
                   .eq('target_id', video.id)
                   .eq('target_type', 'video')
-                  .eq('user_email', userEmail)
+                  .eq('user_email', userEmail)  // CHANGED FROM user_id TO user_email
                   .maybeSingle();
                 
                 if (!userLikeError) {
@@ -214,7 +214,7 @@ export default async function handler(req, res) {
                 console.error(`❌ Comment count error for video ${video.id}:`, commentCountError);
               }
               
-              // Get new comments since last check WITH USER INFO
+              // Get new comments since last check - SIMPLIFIED WITHOUT JOIN
               const { data: newComments, error: newCommentsError } = await supabase
                 .from('comments')
                 .select(`
@@ -222,8 +222,7 @@ export default async function handler(req, res) {
                   user_id,
                   video_id,
                   comment_text,
-                  created_at,
-                  users!inner ( id, username, avatar_url )
+                  created_at
                 `)
                 .eq('video_id', video.id)
                 .gte('created_at', sinceTime)
@@ -233,20 +232,37 @@ export default async function handler(req, res) {
                 console.error(`❌ New comments error for video ${video.id}:`, newCommentsError);
               }
               
+              // Get user info for comments separately
+              let commentsWithUsers = [];
+              if (newComments && newComments.length > 0) {
+                const userIds = [...new Set(newComments.map(c => c.user_id).filter(id => id))];
+                if (userIds.length > 0) {
+                  const { data: commentUsers } = await supabase
+                    .from('users')
+                    .select('id, username, avatar_url')
+                    .in('id', userIds);
+                  
+                  const userMap = {};
+                  if (commentUsers) {
+                    commentUsers.forEach(user => {
+                      userMap[user.id] = user;
+                    });
+                  }
+                  
+                  commentsWithUsers = newComments.map(c => ({
+                    ...c,
+                    users: userMap[c.user_id] || null
+                  }));
+                }
+              }
+              
               return {
                 id: video.id,
                 views: video.views || 0,
                 likes: video.likes_count || likes || 0,
                 hasLiked,
                 commentCount: commentCount || 0,
-                newComments: (newComments || []).map(c => ({
-                  id: c.id,
-                  user_id: c.user_id,
-                  video_id: c.video_id,
-                  comment_text: c.comment_text,
-                  created_at: c.created_at,
-                  users: c.users
-                })),
+                newComments: commentsWithUsers,
                 updated_at: video.updated_at
               };
             } catch (err) {
@@ -284,6 +300,7 @@ export default async function handler(req, res) {
             title,
             description,
             video_url,
+            url,  // ADDED: Your schema has both video_url and url
             cover_url,
             original_filename,
             mime_type,
@@ -291,7 +308,7 @@ export default async function handler(req, res) {
             views,
             likes_count,
             created_at,
-            users ( id, email, username, avatar_url, online )
+            users ( id, email, username, avatar_url, profile_picture, online )
           `)
           .eq('id', singleVideoId)
           .limit(1);
@@ -340,6 +357,7 @@ export default async function handler(req, res) {
           title,
           description,
           video_url,
+          url,  // ADDED
           cover_url,
           original_filename,
           mime_type,
@@ -347,7 +365,7 @@ export default async function handler(req, res) {
           views,
           likes_count,
           created_at,
-          users ( id, email, username, avatar_url, online )
+          users ( id, email, username, avatar_url, profile_picture, online )
         `)
         .order('created_at', { ascending: false })
         .limit(100);
@@ -391,12 +409,12 @@ export default async function handler(req, res) {
   }
 }
 
-// Helper function to process video data - COMPLETE VERSION
+// Helper function to process video data - UPDATED FOR YOUR SCHEMA
 async function processVideoData(video, userEmail, userId) {
   try {
     console.log(`📹 Processing video: ${video.title || 'Untitled'}`);
     
-    // Get like count from likes table
+    // Get like count from likes table - USING user_email NOT user_id
     const { count: likes, error: likesError } = await supabase
       .from('likes')
       .select('*', { count: 'exact', head: true })
@@ -407,7 +425,7 @@ async function processVideoData(video, userEmail, userId) {
       console.error('❌ Likes count error:', likesError);
     }
 
-    // Check if current user has liked this video
+    // Check if current user has liked this video - USING user_email
     let hasLiked = false;
     if (userEmail) {
       const { data: userLike, error: userLikeError } = await supabase
@@ -415,7 +433,7 @@ async function processVideoData(video, userEmail, userId) {
         .select('id')
         .eq('target_id', video.id)
         .eq('target_type', 'video')
-        .eq('user_email', userEmail)
+        .eq('user_email', userEmail)  // CHANGED FROM user_id TO user_email
         .maybeSingle();
 
       if (!userLikeError) {
@@ -425,9 +443,8 @@ async function processVideoData(video, userEmail, userId) {
 
     console.log(`📹 Likes: ${likes || 0}, User liked: ${hasLiked}, Views: ${video.views || 0}`);
 
-    // Handle URLs
-    let videoUrl = video.video_url;
-    let coverUrl = video.cover_url;
+    // Handle URLs - CHECK BOTH video_url AND url COLUMNS
+    let videoUrl = video.video_url || video.url;  // Get from either column
     
     // If URLs are relative paths, create public URLs
     if (videoUrl && !videoUrl.startsWith('http')) {
@@ -442,6 +459,7 @@ async function processVideoData(video, userEmail, userId) {
       }
     }
     
+    let coverUrl = video.cover_url;
     if (coverUrl && !coverUrl.startsWith('http')) {
       console.log(`📹 Creating public URL for relative cover path: ${coverUrl}`);
       try {
@@ -454,7 +472,7 @@ async function processVideoData(video, userEmail, userId) {
       }
     }
 
-    // Get comments WITH USER INFO
+    // Get comments - SEPARATE QUERIES TO AVOID JOIN ISSUES
     const { data: comments, error: commentsError } = await supabase
       .from('comments')
       .select(`
@@ -463,14 +481,51 @@ async function processVideoData(video, userEmail, userId) {
         video_id,
         comment_text,
         created_at,
-        edited_at,
-        users!inner ( id, username, email, avatar_url )
+        edited_at
       `)
       .eq('video_id', video.id)
       .order('created_at', { ascending: true });
 
     if (commentsError) {
       console.error('❌ Comments fetch error:', commentsError);
+    }
+
+    // Get user info for comments
+    let commentsWithUsers = [];
+    if (comments && comments.length > 0) {
+      const userIds = [...new Set(comments.map(c => c.user_id).filter(id => id))];
+      if (userIds.length > 0) {
+        const { data: commentUsers } = await supabase
+          .from('users')
+          .select('id, username, email, avatar_url, profile_picture')
+          .in('id', userIds);
+        
+        const userMap = {};
+        if (commentUsers) {
+          commentUsers.forEach(user => {
+            userMap[user.id] = user;
+          });
+        }
+        
+        commentsWithUsers = comments.map(c => ({
+          id: c.id,
+          user_id: c.user_id,
+          video_id: c.video_id,
+          text: c.comment_text,
+          created_at: c.created_at,
+          edited_at: c.edited_at,
+          user: userMap[c.user_id] || null
+        }));
+      }
+    }
+
+    // Handle user avatar - check both avatar_url and profile_picture
+    let userData = video.users;
+    if (userData) {
+      // Ensure avatar_url is populated
+      if (!userData.avatar_url && userData.profile_picture) {
+        userData = { ...userData, avatar_url: userData.profile_picture };
+      }
     }
 
     return {
@@ -483,16 +538,8 @@ async function processVideoData(video, userEmail, userId) {
       uploaded_at: video.created_at,
       videoUrl,
       coverUrl,
-      user: video.users,
-      comments: (comments || []).map(c => ({
-        id: c.id,
-        user_id: c.user_id,
-        video_id: c.video_id,
-        text: c.comment_text,
-        created_at: c.created_at,
-        edited_at: c.edited_at,
-        user: c.users
-      }))
+      user: userData,
+      comments: commentsWithUsers
     };
   } catch (err) {
     console.error(`❌ Error in processVideoData for video ${video.id}:`, err);
@@ -508,7 +555,7 @@ async function processVideoData(video, userEmail, userId) {
       hasLiked: false,
       views: video.views || 0,
       uploaded_at: video.created_at,
-      videoUrl: video.video_url,
+      videoUrl: video.video_url || video.url,
       coverUrl: video.cover_url,
       user: video.users,
       comments: []
