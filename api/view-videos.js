@@ -1,4 +1,4 @@
-// pages/api/view-videos.js (UPDATED FOR REAL-TIME)
+// pages/api/view-videos.js (FIXED VERSION)
 import { createClient } from '@supabase/supabase-js';
 import cookie from 'cookie';
 
@@ -123,7 +123,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       console.log('📹 GET request - fetching videos');
       
-      const { statsOnly, ids, since, videoId: singleVideoId } = req.query;
+      const { statsOnly, ids, since, videoId: singleVideoId, incrementViews } = req.query;
       
       // ========== STATS ONLY MODE (for polling/real-time updates) ==========
       if (statsOnly === 'true' && ids) {
@@ -248,18 +248,24 @@ export default async function handler(req, res) {
         // Process the single video
         const result = await processVideoData(video, userEmail);
         
-        // INCREMENT VIEW COUNT for single video view
-        console.log(`📹 Incrementing view count for video ${video.id}`);
-        await supabase
-          .from('videos')
-          .update({ 
-            views: (video.views || 0) + 1,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', video.id);
-        
-        // Update the views in response
-        result.views = (video.views || 0) + 1;
+        // INCREMENT VIEW COUNT if requested (when someone actually watches)
+        if (incrementViews === 'true') {
+          console.log(`📹 Incrementing view count for video ${video.id}`);
+          const { data: updatedVideo } = await supabase
+            .from('videos')
+            .update({ 
+              views: (video.views || 0) + 1,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', video.id)
+            .select('views')
+            .single();
+          
+          // Update the views in response
+          if (updatedVideo) {
+            result.views = updatedVideo.views;
+          }
+        }
         
         return res.status(200).json(result);
       }
@@ -300,6 +306,16 @@ export default async function handler(req, res) {
 
       console.log(`📹 Found ${videos.length} videos`);
       
+      // DEBUG: Log first video's views
+      if (videos.length > 0) {
+        console.log(`🔍 First video views debug:`, {
+          id: videos[0].id,
+          title: videos[0].title,
+          views: videos[0].views,
+          viewsType: typeof videos[0].views
+        });
+      }
+      
       // Build response with additional data
       const result = await Promise.all(
         videos.map(async (video) => {
@@ -323,6 +339,7 @@ export default async function handler(req, res) {
 // Helper function to process video data
 async function processVideoData(video, userEmail) {
   console.log(`📹 Processing video: ${video.title}`);
+  console.log(`🔍 Video views from DB: ${video.views} (type: ${typeof video.views})`);
   
   // Get like count from likes table
   const { count: likes, error: likesError } = await supabase
@@ -412,7 +429,7 @@ async function processVideoData(video, userEmail) {
     description: video.description,
     likes: video.likes_count || likes || 0, // Use cached count if available
     hasLiked,
-    views: video.views || 0,
+    views: video.views || 0, // This should work now
     uploaded_at: video.created_at,
     videoUrl,
     coverUrl,
