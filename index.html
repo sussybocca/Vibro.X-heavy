@@ -1769,6 +1769,9 @@ async function loadVideos(reset = false, searchQuery = '') {
                 cover_url: videos[0].cover_url,
                 user: videos[0].user,
                 views: videos[0].views,
+                likes: videos[0].likes,
+                hasLiked: videos[0].hasLiked,
+                comments: videos[0].comments?.length || 0,
                 duration: videos[0].duration
             });
         }
@@ -1837,6 +1840,9 @@ function renderVideos(videos, reset = false) {
         const thumbnail = video.cover_url || 'https://images.unsplash.com/photo-1611605698335-8b1569810435?w=800&h=450&fit=crop';
         const duration = video.duration ? formatDuration(video.duration) : '--:--';
         const views = video.views ? formatNumber(video.views) : '0';
+        const likes = video.likes ? formatNumber(video.likes) : '0';
+        const commentCount = video.comments ? video.comments.length : 0;
+        
         // Use uploaded_at if available, fallback to created_at
         const uploadTime = video.uploaded_at ? formatRelativeTime(video.uploaded_at) : 
                           (video.created_at ? formatRelativeTime(video.created_at) : 'Recently');
@@ -1922,7 +1928,10 @@ async function openVideoModal(video) {
         id: video.id,
         title: video.title,
         video_url: video.video_url?.substring(0, 50),
-        cover_url: video.cover_url
+        cover_url: video.cover_url,
+        views: video.views,
+        likes: video.likes,
+        comments: video.comments?.length || 0
     });
     
     // Set video player - use video_url property
@@ -1973,13 +1982,23 @@ async function openVideoModal(video) {
         toggleBtn.style.display = 'none';
     }
     
-    // Load likes if user is logged in
+    // Load likes if user is logged in - use data from API
     if (currentUser) {
-        await loadVideoLikes();
+        // Update like button with data from video object
+        updateLikeButton({
+            likes: video.likes || 0,
+            liked: video.hasLiked || false
+        });
+    } else {
+        // Set default like button for guests
+        updateLikeButton({
+            likes: video.likes || 0,
+            liked: false
+        });
     }
     
-    // Load comments
-    await loadComments(true);
+    // Load comments from video data
+    await loadComments(true, video.comments || []);
     
     // Load recommended videos
     await loadRecommendedVideos();
@@ -2024,6 +2043,95 @@ function toggleDescription() {
         full.style.display = 'none';
         toggleBtn.textContent = 'Show more';
     }
+}
+
+// =============== COMMENTS LOADING (USING VIDEO DATA) ===============
+async function loadComments(reset = false, videoComments = null) {
+    if (!currentVideo && !videoComments) return;
+    
+    const commentsList = document.getElementById('commentsList');
+    
+    if (reset) {
+        commentsCache[currentVideo.id] = { comments: [], page: 0, total: 0 };
+        commentsList.innerHTML = `
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <p>Loading comments...</p>
+            </div>
+        `;
+    }
+    
+    try {
+        // Use comments passed from video data
+        const comments = videoComments || currentVideo.comments || [];
+        
+        // Update comment count
+        document.getElementById('commentsCount').textContent = `${formatNumber(comments.length)} Comments`;
+        
+        if (comments.length === 0 && reset) {
+            commentsList.innerHTML = `
+                <div style="text-align: center; padding: 48px; color: var(--text-tertiary);">
+                    <i class="fas fa-comment-slash" style="font-size: 48px; margin-bottom: 16px;"></i>
+                    <h3>No comments yet</h3>
+                    <p>Be the first to comment!</p>
+                </div>
+            `;
+            document.getElementById('loadMoreComments').style.display = 'none';
+            return;
+        }
+        
+        renderComments(comments, reset);
+        document.getElementById('loadMoreComments').style.display = 'none';
+        
+    } catch (error) {
+        console.error('Load comments error:', error);
+        showNotification(`Failed to load comments: ${error.message}`, 'error');
+        commentsList.innerHTML = `
+            <div style="text-align: center; padding: 48px; color: var(--text-tertiary);">
+                <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                <h3>Failed to load comments</h3>
+            </div>
+        `;
+    }
+}
+
+function renderComments(comments, reset = false) {
+    const commentsList = document.getElementById('commentsList');
+    
+    if (reset) commentsList.innerHTML = '';
+    
+    comments.forEach(comment => {
+        const commentDiv = document.createElement('div');
+        commentDiv.className = 'comment-item';
+        commentDiv.setAttribute('data-comment-id', comment.id);
+        
+        const userAvatar = comment.user?.avatar_url || comment.user?.profile_picture || 
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user?.username || comment.user?.email || 'User')}&background=random`;
+        
+        commentDiv.innerHTML = `
+            <img src="${userAvatar}" alt="${comment.user?.username || 'User'}" 
+                 class="comment-avatar"
+                 onerror="this.src='https://ui-avatars.com/api/?name=User&background=random'">
+            <div class="comment-content">
+                <div class="comment-header">
+                    <span class="comment-author">${comment.user?.username || 'User'}</span>
+                    <span class="comment-time">${formatRelativeTime(comment.created_at)}</span>
+                </div>
+                <div class="comment-text">${comment.text || ''}</div>
+                <div class="comment-actions">
+                    <button class="comment-like" onclick="likeComment('${comment.id}', ${comment.hasLiked || false})">
+                        <i class="${comment.hasLiked ? 'fas' : 'far'} fa-thumbs-up"></i>
+                        <span>${formatNumber(comment.likes || 0)}</span>
+                    </button>
+                    <button class="comment-reply">
+                        Reply
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        commentsList.appendChild(commentDiv);
+    });
 }
 // =============== LIKES ===============
 async function loadVideoLikes() {
