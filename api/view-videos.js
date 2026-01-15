@@ -1,4 +1,4 @@
-// pages/api/view-videos.js (COMPLETE FIX - Works with your database)
+// pages/api/view-videos.js (FINAL FIX - Returns array, not object)
 import { createClient } from '@supabase/supabase-js';
 import cookie from 'cookie';
 
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       // Get user info for response
       const { data: user } = await supabase
         .from('users')
-        .select('id, username, avatar_url, email')
+        .select('id, username, avatar_url, email, profile_picture')
         .eq('id', userId)
         .single();
 
@@ -88,24 +88,16 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: error.message });
       }
 
-      // Update video comment count in comments table (likes_count field is being used)
-      await supabase
-        .from('comments')
-        .update({
-          likes_count: (await supabase
-            .from('comments')
-            .select('*', { count: 'exact', head: true })
-            .eq('video_id', videoId)).count || 0
-        })
-        .eq('id', newComment.id);
-
       console.log('✅ Comment posted successfully');
       
       return res.status(200).json({
         id: newComment.id,
         text: newComment.comment_text,
         created_at: newComment.created_at,
-        user: user
+        user: {
+          ...user,
+          avatar_url: user.avatar_url || user.profile_picture
+        }
       });
     }
 
@@ -216,7 +208,7 @@ export default async function handler(req, res) {
             created_at,
             tags,
             ai_generated,
-            users!videos_user_id_fkey (
+            users (
               id,
               email,
               username,
@@ -277,14 +269,14 @@ export default async function handler(req, res) {
           created_at,
           tags,
           ai_generated,
-          users!videos_user_id_fkey (
+          users (
             id,
             email,
             username,
             avatar_url,
             profile_picture
           )
-        `, { count: 'exact' });
+        `);
 
       // Apply search filter
       if (search) {
@@ -306,9 +298,11 @@ export default async function handler(req, res) {
       }
 
       // Apply pagination
-      query = query.range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+      if (limit && offset) {
+        query = query.range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+      }
 
-      const { data: videos, error: videosError, count } = await query;
+      const { data: videos, error: videosError } = await query;
 
       if (videosError) {
         console.error('❌ Videos fetch error:', videosError);
@@ -317,14 +311,10 @@ export default async function handler(req, res) {
       
       if (!videos || videos.length === 0) {
         console.log('📭 No videos found');
-        return res.status(200).json({
-          videos: [],
-          total: 0,
-          hasMore: false
-        });
+        return res.status(200).json([]);
       }
 
-      console.log(`📹 Found ${videos.length} videos (total: ${count})`);
+      console.log(`📹 Found ${videos.length} videos`);
       
       // Build response with additional data
       const result = await Promise.all(
@@ -334,11 +324,7 @@ export default async function handler(req, res) {
       );
 
       console.log('✅ Returning', result.length, 'videos');
-      return res.status(200).json({
-        videos: result,
-        total: count,
-        hasMore: parseInt(offset) + parseInt(limit) < count
-      });
+      return res.status(200).json(result);
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
@@ -408,8 +394,8 @@ async function processVideoData(video, userEmail) {
         console.log(`✅ Cover URL generated`);
       } catch (error) {
         console.error('❌ Error creating cover URL:', error);
-        // Fallback to a placeholder
-        coverUrl = 'https://via.placeholder.com/320x180?text=No+Thumbnail';
+        // Use a better placeholder
+        coverUrl = 'https://images.unsplash.com/photo-1611605698335-8b1569810435?w=800&h=450&fit=crop';
       }
     }
 
@@ -423,7 +409,7 @@ async function processVideoData(video, userEmail) {
         comment_text, 
         created_at, 
         edited_at,
-        users!comments_user_id_fkey (
+        users (
           id,
           username,
           email,
@@ -449,7 +435,7 @@ async function processVideoData(video, userEmail) {
           id: userData.id,
           username: userData.username || 'Anonymous',
           email: userData.email,
-          avatar_url: userData.avatar_url || userData.profile_picture || 'https://ui-avatars.com/api/?name=User&background=random'
+          avatar_url: userData.avatar_url || userData.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.username || 'User')}&background=random`
         }
       };
     });
@@ -460,13 +446,14 @@ async function processVideoData(video, userEmail) {
       id: userData.id,
       email: userData.email,
       username: userData.username || userData.email?.split('@')[0] || 'User',
-      avatar_url: userData.avatar_url || userData.profile_picture || 'https://ui-avatars.com/api/?name=User&background=random'
+      avatar_url: userData.avatar_url || userData.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.username || userData.email || 'User')}&background=random`
     };
 
     // Calculate duration placeholder (you might want to store actual duration in database)
     // For now, we'll use a random duration between 1-10 minutes
     const duration = Math.floor(Math.random() * 600) + 60; // 1-10 minutes in seconds
 
+    // Return the data with EXACT property names the frontend expects
     return {
       id: video.id,
       title: video.title || 'Untitled Video',
@@ -475,8 +462,8 @@ async function processVideoData(video, userEmail) {
       hasLiked,
       views: video.views || 0,
       uploaded_at: video.created_at,
-      videoUrl: videoUrl,
-      coverUrl: coverUrl || 'https://via.placeholder.com/320x180?text=No+Thumbnail',
+      video_url: videoUrl,  // Frontend expects video_url
+      cover_url: coverUrl || 'https://images.unsplash.com/photo-1611605698335-8b1569810435?w=800&h=450&fit=crop',  // Frontend expects cover_url
       duration: duration,
       user: processedUser,
       comments: processedComments,
@@ -484,7 +471,8 @@ async function processVideoData(video, userEmail) {
       ai_generated: video.ai_generated || false,
       mime_type: video.mime_type,
       size: video.size,
-      original_filename: video.original_filename
+      original_filename: video.original_filename,
+      created_at: video.created_at  // Add created_at for consistency
     };
   } catch (err) {
     console.error(`❌ Error in processVideoData for video ${video.id}:`, err.message);
@@ -499,18 +487,19 @@ async function processVideoData(video, userEmail) {
       hasLiked: false,
       views: video.views || 0,
       uploaded_at: video.created_at,
-      videoUrl: video.video_url,
-      coverUrl: video.cover_url || 'https://via.placeholder.com/320x180?text=Error',
+      video_url: video.video_url,
+      cover_url: video.cover_url || 'https://images.unsplash.com/photo-1611605698335-8b1569810435?w=800&h=450&fit=crop',
       duration: 180,
       user: {
         id: userData.id,
         email: userData.email,
         username: userData.username || 'User',
-        avatar_url: userData.avatar_url || userData.profile_picture || 'https://ui-avatars.com/api/?name=User&background=random'
+        avatar_url: userData.avatar_url || userData.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.username || userData.email || 'User')}&background=random`
       },
       comments: [],
       tags: video.tags || [],
-      ai_generated: video.ai_generated || false
+      ai_generated: video.ai_generated || false,
+      created_at: video.created_at
     };
   }
 }
