@@ -1,4 +1,4 @@
-// pages/api/view-videos.js (FIXED - NO updated_at COLUMN)
+// pages/api/view-videos.js (UPDATED FIX)
 import { createClient } from '@supabase/supabase-js';
 import cookie from 'cookie';
 
@@ -11,7 +11,6 @@ const supabase = createClient(
 export default async function handler(req, res) {
   try {
     console.log('👀 View-videos API called, method:', req.method);
-    console.log('📊 Query params:', req.query);
     
     let userId = null;
     let userEmail = null;
@@ -19,8 +18,6 @@ export default async function handler(req, res) {
     // Check if user is authenticated
     const cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : {};
     const sessionToken = cookies['__Host-session_secure'] || cookies.session_secure;
-    
-    console.log('🔍 Session token present:', !!sessionToken);
     
     if (sessionToken) {
       const { data: session } = await supabase
@@ -32,12 +29,8 @@ export default async function handler(req, res) {
       if (session && new Date(session.expires_at) > new Date()) {
         userId = session.user_id;
         userEmail = session.user_email;
-        console.log('✅ User authenticated, ID:', userId, 'Email:', userEmail);
-      } else {
-        console.log('❌ Session expired or invalid');
+        console.log('✅ User authenticated, ID:', userId);
       }
-    } else {
-      console.log('❌ No session token - user is guest');
     }
 
     // Handle POST: add a new comment
@@ -51,7 +44,7 @@ export default async function handler(req, res) {
       const { videoId } = req.query;
       const { text } = req.body;
 
-      console.log('💬 Comment details - Video ID:', videoId, 'Text length:', text?.length);
+      console.log('💬 Comment details - Video ID:', videoId);
 
       if (!text) return res.status(400).json({ error: 'Comment text required' });
       if (!videoId) return res.status(400).json({ error: 'Video ID required' });
@@ -88,33 +81,6 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: error.message });
       }
 
-      // UPDATE VIDEO TIMESTAMP - Add updated_at if column doesn't exist
-      try {
-        await supabase
-          .from('videos')
-          .update({
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', videoId);
-      } catch (updateError) {
-        console.log('⚠️ updated_at column might not exist, continuing...');
-      }
-
-      // Send notification to video owner if not commenting on own video
-      if (video.user_id !== userId) {
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: video.user_id,
-            from_user_id: userId,
-            type: 'video_comment',
-            video_id: videoId,
-            message: 'commented on your video',
-            read: false,
-            created_at: new Date().toISOString()
-          });
-      }
-
       console.log('✅ Comment posted successfully');
       
       return res.status(200).json({
@@ -137,22 +103,6 @@ export default async function handler(req, res) {
         
         const videoIds = ids.split(',');
         
-        // Handle the since parameter - use created_at instead of updated_at
-        let sinceTime;
-        if (since) {
-          const parsedSince = parseInt(since);
-          if (!isNaN(parsedSince) && parsedSince > 0) {
-            sinceTime = new Date(parsedSince).toISOString();
-          } else {
-            sinceTime = new Date(Date.now() - 30000).toISOString(); // Default: last 30 seconds
-          }
-        } else {
-          sinceTime = new Date(Date.now() - 30000).toISOString(); // Default: last 30 seconds
-        }
-        
-        console.log(`📊 Since time: ${sinceTime}`);
-        
-        // SIMPLIFIED: Just get all videos (no updated_at filter)
         const { data: videos, error: videosError } = await supabase
           .from('videos')
           .select(`
@@ -175,7 +125,7 @@ export default async function handler(req, res) {
         
         console.log(`📊 Found ${videos.length} videos`);
         
-        // Get additional stats for each video - SIMPLIFIED
+        // Get additional stats for each video
         const result = await Promise.all(
           videos.map(async (video) => {
             try {
@@ -208,10 +158,28 @@ export default async function handler(req, res) {
               // Get new comments since last check
               const { data: newComments } = await supabase
                 .from('comments')
-                .select('id, user_id, video_id, comment_text, created_at')
+                .select(`
+                  id, 
+                  user_id, 
+                  video_id, 
+                  comment_text, 
+                  created_at,
+                  users (id, username, email, avatar_url, profile_picture)
+                `)
                 .eq('video_id', video.id)
-                .gte('created_at', sinceTime)
-                .order('created_at', { ascending: true });
+                .order('created_at', { ascending: true })
+                .limit(10);
+              
+              // Process new comments to include user data
+              const processedNewComments = (newComments || []).map(comment => ({
+                id: comment.id,
+                text: comment.comment_text,
+                created_at: comment.created_at,
+                user: {
+                  ...comment.users,
+                  avatar_url: comment.users?.avatar_url || comment.users?.profile_picture
+                }
+              }));
               
               return {
                 id: video.id,
@@ -219,8 +187,8 @@ export default async function handler(req, res) {
                 likes: video.likes_count || likes || 0,
                 hasLiked,
                 commentCount: commentCount || 0,
-                newComments: newComments || [],
-                updated_at: video.created_at // Use created_at as fallback
+                newComments: processedNewComments,
+                updated_at: video.created_at
               };
             } catch (err) {
               console.error(`❌ Error processing video ${video.id}:`, err.message);
@@ -274,7 +242,7 @@ export default async function handler(req, res) {
         const video = videos[0];
         
         // Process the single video
-        const result = await processVideoData(video, userEmail);
+        const result = await processVideoData(video, userEmail, userId);
         
         // INCREMENT VIEW COUNT if requested
         if (incrementViews === 'true') {
@@ -336,7 +304,7 @@ export default async function handler(req, res) {
       // Build response with additional data
       const result = await Promise.all(
         videos.map(async (video) => {
-          return await processVideoData(video, userEmail);
+          return await processVideoData(video, userEmail, userId);
         })
       );
 
@@ -358,9 +326,9 @@ export default async function handler(req, res) {
 }
 
 // Helper function to process video data
-async function processVideoData(video, userEmail) {
+async function processVideoData(video, userEmail, userId) {
   try {
-    console.log(`📹 Processing video: ${video.title || 'Untitled'}`);
+    console.log(`📹 Processing video: ${video.id} - ${video.title || 'Untitled'}`);
     
     // Get like count from likes table
     const { count: likes } = await supabase
@@ -386,40 +354,67 @@ async function processVideoData(video, userEmail) {
     let videoUrl = video.video_url || video.url;
     let coverUrl = video.cover_url;
 
-    // If URLs are relative paths, create public URLs
-    if (videoUrl && !videoUrl.startsWith('http')) {
+    // Generate proper storage URLs
+    if (videoUrl && !videoUrl.startsWith('http') && !videoUrl.startsWith('blob:')) {
       try {
+        console.log(`🔄 Generating video URL for: ${videoUrl}`);
         const { data: publicUrlData } = supabase.storage
           .from('videos')
           .getPublicUrl(videoUrl);
         videoUrl = publicUrlData.publicUrl;
+        console.log(`✅ Video URL: ${videoUrl.substring(0, 100)}...`);
       } catch (error) {
         console.error('❌ Error creating video URL:', error);
       }
     }
     
-    if (coverUrl && !coverUrl.startsWith('http')) {
+    if (coverUrl && !coverUrl.startsWith('http') && !coverUrl.startsWith('blob:')) {
       try {
+        console.log(`🔄 Generating cover URL for: ${coverUrl}`);
         const { data: publicUrlData } = supabase.storage
           .from('covers')
           .getPublicUrl(coverUrl);
         coverUrl = publicUrlData.publicUrl;
+        console.log(`✅ Cover URL: ${coverUrl}`);
       } catch (error) {
         console.error('❌ Error creating cover URL:', error);
       }
     }
 
-    // Get comments
+    // Get comments with user info
     const { data: comments } = await supabase
       .from('comments')
-      .select('id, user_id, video_id, comment_text, created_at, edited_at')
+      .select(`
+        id, 
+        user_id, 
+        video_id, 
+        comment_text, 
+        created_at, 
+        edited_at,
+        users (id, username, email, avatar_url, profile_picture)
+      `)
       .eq('video_id', video.id)
       .order('created_at', { ascending: true });
 
+    // Process comments to include user data
+    const processedComments = (comments || []).map(comment => ({
+      id: comment.id,
+      text: comment.comment_text,
+      created_at: comment.created_at,
+      edited_at: comment.edited_at,
+      user: {
+        ...comment.users,
+        avatar_url: comment.users?.avatar_url || comment.users?.profile_picture
+      }
+    }));
+
     // Handle user avatar
     let userData = video.users;
-    if (userData && !userData.avatar_url && userData.profile_picture) {
-      userData = { ...userData, avatar_url: userData.profile_picture };
+    if (userData) {
+      userData = {
+        ...userData,
+        avatar_url: userData.avatar_url || userData.profile_picture
+      };
     }
 
     return {
@@ -433,14 +428,7 @@ async function processVideoData(video, userEmail) {
       videoUrl,
       coverUrl,
       user: userData,
-      comments: (comments || []).map(c => ({
-        id: c.id,
-        user_id: c.user_id,
-        video_id: c.video_id,
-        text: c.comment_text,
-        created_at: c.created_at,
-        edited_at: c.edited_at
-      }))
+      comments: processedComments
     };
   } catch (err) {
     console.error(`❌ Error in processVideoData for video ${video.id}:`, err.message);
