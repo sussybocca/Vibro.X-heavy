@@ -2423,7 +2423,220 @@ function shareVideo() {
         });
     }
 }
+    
+// =============== TAB HANDLERS ===============
+function setupTabHandlers() {
+  // Home tab (already handled)
+  document.getElementById('homeBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    handleTabClick('homeBtn', 'home');
+  });
+  
+  // Trending tab
+  document.getElementById('trendingBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    handleTabClick('trendingBtn', 'trending');
+  });
+  
+  // History tab
+  document.getElementById('historyBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    handleTabClick('historyBtn', 'history');
+  });
+  
+  // Liked videos tab
+  document.getElementById('likedBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    handleTabClick('likedBtn', 'liked');
+  });
+  
+  // Your videos tab
+  document.getElementById('yourVideosBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    handleTabClick('yourVideosBtn', 'your-videos');
+  });
+  
+  // Watch later tab
+  document.getElementById('watchLaterBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    handleTabClick('watchLaterBtn', 'watch-later');
+  });
+}
 
+async function handleTabClick(tabId, viewType) {
+  console.log(`📊 Switching to ${viewType} view`);
+  
+  // Update active state
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  document.getElementById(tabId).classList.add('active');
+  
+  // Hide upload section if visible
+  document.getElementById('uploadSection').style.display = 'none';
+  document.getElementById('videosSection').style.display = 'block';
+  
+  // Clear search input
+  document.getElementById('searchInput').value = '';
+  
+  // Update page title
+  const pageTitles = {
+    'home': 'Recommended Videos',
+    'trending': 'Trending Videos',
+    'history': 'Watch History',
+    'liked': 'Liked Videos',
+    'your-videos': 'Your Videos',
+    'watch-later': 'Watch Later'
+  };
+  
+  document.querySelector('#videosSection h2').textContent = pageTitles[viewType] || 'Videos';
+  
+  // Load videos for this view
+  await loadVideosForView(viewType);
+}
+
+async function loadVideosForView(viewType, reset = true, searchQuery = '') {
+  const videosList = document.getElementById('videosList');
+  
+  if (reset) {
+    displayedVideos = 0;
+    videosList.innerHTML = `
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <p>Loading ${viewType} videos...</p>
+      </div>
+    `;
+  }
+  
+  try {
+    const sortBy = document.getElementById('sortVideos').value;
+    let url = `/api/view-videos?view=${viewType}&sort=${sortBy}&limit=${VIDEOS_PER_PAGE}&offset=${displayedVideos}`;
+    
+    if (searchQuery) {
+      url += `&search=${encodeURIComponent(searchQuery)}`;
+    }
+    
+    console.log(`📹 Fetching ${viewType} videos from:`, url);
+    const response = await fetch(url, { credentials: 'include' });
+    
+    if (!response.ok) {
+      // Handle authentication errors for private views
+      if (response.status === 401) {
+        const errorData = await response.json();
+        videosList.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-lock"></i>
+            <h3>Authentication Required</h3>
+            <p>${errorData.error || 'Please sign in to view this content'}</p>
+            <button class="btn-primary" onclick="window.location.href='/login'" style="margin-top: 16px;">
+              <i class="fas fa-sign-in-alt"></i>
+              Sign In
+            </button>
+          </div>
+        `;
+        return;
+      }
+      
+      const errorText = await response.text();
+      console.error(`❌ Failed to load ${viewType} videos:`, errorText);
+      throw new Error(`Failed to load videos: ${response.status}`);
+    }
+    
+    const videos = await response.json();
+    console.log(`✅ Loaded ${videos.length} ${viewType} videos`);
+    
+    if (reset) {
+      videosCache = videos;
+      videosList.innerHTML = '';
+    } else {
+      videosCache = [...videosCache, ...videos];
+    }
+    
+    if (videos.length === 0) {
+      if (reset) {
+        const emptyMessages = {
+          'home': 'No videos found. Be the first to upload!',
+          'trending': 'No trending videos yet',
+          'history': 'No watch history found',
+          'liked': 'No liked videos yet',
+          'your-videos': 'You haven\'t uploaded any videos yet',
+          'watch-later': 'No videos in watch later'
+        };
+        
+        videosList.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-video-slash"></i>
+            <h3>No videos found</h3>
+            <p>${emptyMessages[viewType] || 'Try a different view or upload a video'}</p>
+            ${viewType === 'your-videos' ? `
+              <button class="btn-primary" id="uploadFromEmptyBtn" style="margin-top: 16px;">
+                <i class="fas fa-upload"></i>
+                Upload Your First Video
+              </button>
+            ` : ''}
+          </div>
+        `;
+        
+        if (viewType === 'your-videos') {
+          document.getElementById('uploadFromEmptyBtn').addEventListener('click', () => {
+            document.getElementById('uploadBtn').click();
+          });
+        }
+      }
+      document.getElementById('loadMoreContainer').style.display = 'none';
+      return;
+    }
+    
+    renderVideos(videos, reset);
+    displayedVideos += videos.length;
+    
+    document.getElementById('loadMoreContainer').style.display = 
+      videos.length === VIDEOS_PER_PAGE ? 'block' : 'none';
+    
+    // Setup mobile autoplay
+    if (isMobile) {
+      setupMobileVideoCards();
+    }
+    
+    // Start real-time polling
+    if (!pollingInterval) {
+      startRealTimePolling();
+    }
+    
+  } catch (error) {
+    console.error(`❌ Load ${viewType} videos error:`, error);
+    showNotification(`Failed to load ${viewType} videos: ${error.message}`, 'error');
+    videosList.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-exclamation-triangle"></i>
+        <h3>Failed to load videos</h3>
+        <p>Please try again later</p>
+      </div>
+    `;
+  }
+}
+
+// Update the loadVideos function to use the new view-based loading
+async function loadVideos(reset = false, searchQuery = '') {
+  // Get current active tab
+  const activeTab = document.querySelector('.sidebar-item.active');
+  let viewType = 'home'; // default
+  
+  if (activeTab) {
+    const tabMap = {
+      'homeBtn': 'home',
+      'trendingBtn': 'trending',
+      'historyBtn': 'history',
+      'likedBtn': 'liked',
+      'yourVideosBtn': 'your-videos',
+      'watchLaterBtn': 'watch-later'
+    };
+    
+    viewType = tabMap[activeTab.id] || 'home';
+  }
+  
+  await loadVideosForView(viewType, reset, searchQuery);
+}
 // =============== INITIALIZATION ===============
 document.addEventListener('DOMContentLoaded', async () => {
     // Setup event listeners
@@ -2506,8 +2719,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
     
+    
     // Sort changes
-    document.getElementById('sortVideos').addEventListener('change', () => loadVideos(true));
+document.getElementById('sortVideos').addEventListener('change', async () => {
+  // Get current active tab
+  const activeTab = document.querySelector('.sidebar-item.active');
+  let viewType = 'home'; // default
+  
+  if (activeTab) {
+    const tabMap = {
+      'homeBtn': 'home',
+      'trendingBtn': 'trending',
+      'historyBtn': 'history',
+      'likedBtn': 'liked',
+      'yourVideosBtn': 'your-videos',
+      'watchLaterBtn': 'watch-later'
+    };
+    
+    viewType = tabMap[activeTab.id] || 'home';
+  }
+  
+  await loadVideosForView(viewType, true);
+});
     document.getElementById('commentsSort').addEventListener('change', () => loadComments(true));
     
     // Close modals on outside click
