@@ -4444,11 +4444,14 @@ async function loadVideosForView(viewType, reset = true, searchQuery = '') {
         const sortBy = document.getElementById('sortVideos').value;
         let url = `/api/view-videos?view=${viewType}&sort=${sortBy}&limit=${VIDEOS_PER_PAGE}&offset=${displayedVideos}`;
         
-        if (searchQuery) {
-            // FIXED: Properly encode search query for PostgREST
-            const encodedQuery = encodeURIComponent(`%${searchQuery}%`);
-            url = `/api/view-videos?or=(title.ilike.${encodedQuery},description.ilike.${encodedQuery},users.username.ilike.${encodedQuery})&limit=${VIDEOS_PER_PAGE}&offset=${displayedVideos}`;
-        }
+       if (searchQuery) {
+    // FIXED: Encode the search term but keep % signs as literal %
+    const encodedTerm = encodeURIComponent(searchQuery);
+    
+    // Use %25 for the % signs in the URL (since % is a special URL character)
+    // So % becomes %25 in the URL
+    url = `/api/view-videos?or=(title.ilike.%25${encodedTerm}%25,description.ilike.%25${encodedTerm}%25,users.username.ilike.%25${encodedTerm}%25)&limit=${VIDEOS_PER_PAGE}&offset=${displayedVideos}`;
+}
         
         
         const response = await fetch(url, { credentials: 'include' });
