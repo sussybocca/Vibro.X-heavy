@@ -787,7 +787,7 @@
                    new Date().getTimezoneOffset() + (navigator.plugins.length || 0);
         }
         
-        // Login function
+        // REAL API CALL - Login function
         async function handleLogin() {
             if (isProcessing) return;
             
@@ -826,14 +826,13 @@
             const fingerprint = getFingerprint();
             
             try {
-                // Simulate API call with animation
-                await new Promise(resolve => setTimeout(resolve, 800));
-                
-                // In a real app, you would make an actual fetch call:
-                /*
+                // REAL API CALL - No simulation
                 const res = await fetch('/api/login', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
                     body: JSON.stringify({ 
                         email, 
                         password, 
@@ -844,20 +843,12 @@
                     })
                 });
                 
+                // Parse the response
                 const data = await res.json();
-                */
                 
-                // For demo purposes, simulate different responses
-                const responses = [
-                    { verification_required: true, message: "Verification code sent to your email." },
-                    { success: true, message: "Login successful! Redirecting..." },
-                    { error: "Invalid credentials", redirect: null }
-                ];
-                
-                const data = responses[Math.floor(Math.random() * responses.length)];
-                
+                // Handle different response scenarios
                 if (data.verification_required) {
-                    showMessage(data.message || "Verification code sent.", "info");
+                    showMessage(data.message || "Verification code sent to your email.", "info");
                     pendingLoginData = { email, password, remember_me, fingerprint, accepted_terms: true };
                     
                     // Show verification section with animation
@@ -865,14 +856,18 @@
                     verifySection.classList.add('animate__animated', 'animate__fadeIn');
                     
                 } else if (data.success) {
-                    showMessage(data.message || "Login successful!", "success");
+                    showMessage(data.message || "Login successful! Redirecting...", "success");
                     
                     // Add success animation to the whole card
                     document.querySelector('.login-card').classList.add('animate__animated', 'animate__pulse');
                     
                     // Redirect after delay
                     setTimeout(() => {
-                        window.location.href = '/profile.html?email=' + encodeURIComponent(email);
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            window.location.href = '/profile.html?email=' + encodeURIComponent(email);
+                        }
                     }, 1500);
                     
                 } else if (data.redirect) {
@@ -883,13 +878,13 @@
                 
             } catch (err) {
                 console.error('Login error:', err);
-                showMessage('Error: Could not reach login server', "error");
+                showMessage('Error: Could not reach login server. Please check your connection.', "error");
             } finally {
                 setLoading(loginBtn, false);
             }
         }
         
-        // Verification function
+        // REAL API CALL - Verification function
         async function handleVerification() {
             if (!pendingLoginData || isProcessing) return;
             
@@ -902,33 +897,34 @@
             setLoading(verifyBtn, true);
             
             try {
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 800));
-                
-                // In a real app:
-                /*
+                // REAL API CALL - No simulation
                 const res = await fetch('/api/login', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...pendingLoginData, verification_code: code })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        ...pendingLoginData, 
+                        verification_code: code 
+                    })
                 });
                 
                 const data = await res.json();
-                */
-                
-                // Demo response
-                const data = Math.random() > 0.2 ? 
-                    { success: true, message: "Verification successful!" } : 
-                    { error: "Invalid verification code" };
                 
                 if (data.success) {
-                    showMessage(data.message, "success");
+                    showMessage(data.message || "Verification successful! Redirecting...", "success");
                     
                     // Add success animation
                     verifySection.classList.add('animate__animated', 'animate__pulse');
                     
+                    // Redirect after delay
                     setTimeout(() => {
-                        window.location.href = '/profile.html?email=' + encodeURIComponent(pendingLoginData.email);
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            window.location.href = '/profile.html?email=' + encodeURIComponent(pendingLoginData.email);
+                        }
                     }, 1500);
                 } else {
                     showMessage(`Error: ${data.error || 'Verification failed'}`, "error");
@@ -982,6 +978,20 @@
             createParticles();
             showMessage("Welcome! Please sign in to continue.", "info");
         });
+        
+        // Debug function to check API response
+        async function testApi() {
+            try {
+                const testRes = await fetch('/api/login', { method: 'GET' });
+                console.log('API Status:', testRes.status);
+                console.log('API Headers:', testRes.headers);
+            } catch (err) {
+                console.error('API test failed:', err);
+            }
+        }
+        
+        // Test API on load
+        window.addEventListener('load', testApi);
     </script>
 </body>
 </html>
