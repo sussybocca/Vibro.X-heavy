@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login - Vibro</title>
+    <title>Login - Vibro | Immersive Experience</title>
     <link rel="icon" type="image/x-icon" href="/icon/vibro.ico?v=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
@@ -12,27 +12,34 @@
     <!-- Animate.css for animations -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     
+    <!-- Howler.js for audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    
     <style>
         /* Modern CSS Reset */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            cursor: none !important; /* Hide default cursor */
         }
         
         :root {
             --primary: #6366f1;
             --primary-dark: #4f46e5;
             --secondary: #10b981;
-            --dark-bg: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.9);
+            --accent: #f59e0b;
+            --dark-bg: #0a0a0f;
+            --card-bg: rgba(20, 20, 30, 0.85);
             --glass-bg: rgba(255, 255, 255, 0.05);
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
             --success: #22c55e;
             --error: #ef4444;
             --gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
-            --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.3);
+            --gradient-glow: linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #e879f9 100%);
+            --shadow-glow: 0 0 50px rgba(99, 102, 241, 0.5);
+            --pulse-glow: 0 0 20px rgba(99, 102, 241, 0.8);
         }
         
         body {
@@ -40,11 +47,71 @@
             min-height: 100vh;
             background: var(--dark-bg);
             color: var(--text-primary);
-            overflow-x: hidden;
+            overflow: hidden;
             position: relative;
+            user-select: none;
         }
         
-        /* Animated background */
+        /* Custom Cursor */
+        .cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--gradient);
+            box-shadow: var(--shadow-glow);
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.15s ease, width 0.3s ease, height 0.3s ease;
+            mix-blend-mode: screen;
+        }
+        
+        .cursor-follower {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(99, 102, 241, 0.1);
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            pointer-events: none;
+            z-index: 9998;
+            transition: transform 0.5s ease, width 0.5s ease, height 0.5s ease;
+            mix-blend-mode: screen;
+        }
+        
+        .cursor.click {
+            transform: scale(0.8);
+            background: var(--accent);
+        }
+        
+        .cursor.hover {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-glow);
+        }
+        
+        .cursor-follower.hover {
+            width: 90px;
+            height: 90px;
+            background: rgba(99, 102, 241, 0.15);
+            border-color: rgba(139, 92, 246, 0.5);
+        }
+        
+        /* Particle background */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -3;
+        }
+        
+        /* Animated background with noise */
         .background-animation {
             position: fixed;
             top: 0;
@@ -53,11 +120,26 @@
             height: 100%;
             z-index: -2;
             background: 
-                radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(217, 70, 239, 0.1) 0%, transparent 50%);
+                radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 40% 40%, rgba(217, 70, 239, 0.1) 0%, transparent 50%),
+                var(--dark-bg);
+            opacity: 0.9;
         }
         
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
+            z-index: -1;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        
+        /* Floating shapes with glow */
         .floating-shapes {
             position: fixed;
             top: 0;
@@ -72,50 +154,53 @@
             position: absolute;
             background: var(--gradient);
             border-radius: 50%;
-            filter: blur(40px);
-            opacity: 0.1;
-            animation: float 20s infinite linear;
+            filter: blur(60px);
+            opacity: 0.15;
+            animation: float 25s infinite linear;
         }
         
         .shape:nth-child(1) {
-            width: 300px;
-            height: 300px;
+            width: 400px;
+            height: 400px;
             top: 10%;
             left: 5%;
             animation-delay: 0s;
         }
         
         .shape:nth-child(2) {
-            width: 200px;
-            height: 200px;
+            width: 300px;
+            height: 300px;
             top: 60%;
             right: 10%;
-            animation-delay: -5s;
-            animation-duration: 25s;
+            animation-delay: -8s;
+            animation-duration: 30s;
         }
         
         .shape:nth-child(3) {
-            width: 150px;
-            height: 150px;
+            width: 200px;
+            height: 200px;
             bottom: 20%;
             left: 20%;
-            animation-delay: -10s;
-            animation-duration: 30s;
+            animation-delay: -15s;
+            animation-duration: 35s;
         }
         
         @keyframes float {
             0%, 100% {
-                transform: translate(0, 0) rotate(0deg);
+                transform: translate(0, 0) rotate(0deg) scale(1);
             }
-            33% {
-                transform: translate(30px, 50px) rotate(120deg);
+            25% {
+                transform: translate(50px, 80px) rotate(90deg) scale(1.1);
             }
-            66% {
-                transform: translate(-20px, 20px) rotate(240deg);
+            50% {
+                transform: translate(-30px, 120px) rotate(180deg) scale(0.9);
+            }
+            75% {
+                transform: translate(70px, -40px) rotate(270deg) scale(1.05);
             }
         }
         
-        /* Main container */
+        /* Main container with parallax effect */
         .container {
             display: flex;
             justify-content: center;
@@ -123,33 +208,49 @@
             min-height: 100vh;
             padding: 2rem;
             position: relative;
+            transform-style: preserve-3d;
+            perspective: 1000px;
         }
         
-        /* Glassmorphism card */
+        /* Glassmorphism card with 3D effect */
         .login-card {
             background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 2.5rem;
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border-radius: 28px;
+            padding: 3rem;
             width: 100%;
-            max-width: 440px;
+            max-width: 480px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 25px 80px rgba(0, 0, 0, 0.5),
+                var(--shadow-glow),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
             position: relative;
             overflow: hidden;
             transform-style: preserve-3d;
-            transition: transform 0.5s ease, box-shadow 0.5s ease;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                        box-shadow 0.8s ease,
+                        border-color 0.5s ease;
+            animation: cardEntrance 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+            transform: translateY(50px) rotateX(10deg);
+            opacity: 0;
+        }
+        
+        @keyframes cardEntrance {
+            to {
+                transform: translateY(0) rotateX(0);
+                opacity: 1;
+            }
         }
         
         .login-card:hover {
-            transform: translateY(-10px) scale(1.01);
+            transform: translateY(-15px) scale(1.02);
             box-shadow: 
-                0 30px 80px rgba(0, 0, 0, 0.4),
-                var(--shadow-glow),
+                0 35px 100px rgba(0, 0, 0, 0.6),
+                0 0 80px rgba(99, 102, 241, 0.4),
                 inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.2);
         }
         
         .login-card::before {
@@ -159,7 +260,13 @@
             left: 0;
             right: 0;
             height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.5), 
+                rgba(99, 102, 241, 0.8), 
+                rgba(255, 255, 255, 0.5), 
+                transparent);
+            z-index: 2;
         }
         
         .card-glow {
@@ -169,139 +276,233 @@
             width: 200%;
             height: 200%;
             background: var(--gradient);
-            opacity: 0.05;
+            opacity: 0.08;
             z-index: -1;
-            filter: blur(60px);
-            animation: rotate 20s linear infinite;
+            filter: blur(80px);
+            animation: rotate 25s linear infinite;
+        }
+        
+        .card-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .card-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0;
+            animation: particleFloat 15s infinite linear;
+        }
+        
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100%) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100%) rotate(360deg);
+                opacity: 0;
+            }
         }
         
         @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
         }
         
-        /* Logo */
+        /* Logo with holographic effect */
         .logo-container {
             display: flex;
             justify-content: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
             position: relative;
         }
         
         .logo-wrapper {
             position: relative;
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         
-        .logo-glow {
+        .logo-hologram {
             position: absolute;
-            width: 120%;
-            height: 120%;
+            width: 140%;
+            height: 140%;
             background: var(--gradient);
             border-radius: 50%;
-            filter: blur(20px);
-            opacity: 0.4;
+            filter: blur(30px);
+            opacity: 0.5;
             z-index: 0;
-            animation: pulse 3s infinite alternate;
+            animation: hologramPulse 4s infinite alternate;
         }
         
-        @keyframes pulse {
-            0% { opacity: 0.3; transform: scale(1); }
-            100% { opacity: 0.6; transform: scale(1.1); }
+        @keyframes hologramPulse {
+            0% { 
+                opacity: 0.4; 
+                transform: scale(1) rotate(0deg);
+                filter: blur(30px) hue-rotate(0deg);
+            }
+            100% { 
+                opacity: 0.7; 
+                transform: scale(1.2) rotate(180deg);
+                filter: blur(40px) hue-rotate(180deg);
+            }
         }
         
         .logo {
-            width: 80px;
-            height: 80px;
-            border-radius: 20px;
-            z-index: 1;
+            width: 90px;
+            height: 90px;
+            border-radius: 22px;
+            z-index: 2;
             position: relative;
-            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
-            transition: transform 0.5s ease;
+            filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.4));
+            transition: transform 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: logoFloat 6s ease-in-out infinite;
+        }
+        
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
         }
         
         .logo:hover {
-            transform: rotate(15deg) scale(1.1);
+            transform: rotate(20deg) scale(1.15);
+            animation-play-state: paused;
         }
         
-        /* Title */
+        /* Title with text shadow animation */
         .title {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
             position: relative;
         }
         
         .title h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
+            font-size: 2.5rem;
+            font-weight: 800;
             background: var(--gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 0.5rem;
             letter-spacing: -0.5px;
+            text-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+            animation: textShimmer 8s infinite linear;
+            background-size: 200% auto;
+        }
+        
+        @keyframes textShimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
         }
         
         .title p {
             color: var(--text-secondary);
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 400;
+            letter-spacing: 0.5px;
         }
         
-        /* Input fields */
+        /* Input fields with glow effects */
         .input-group {
             position: relative;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.8rem;
         }
         
         .input-icon {
             position: absolute;
-            left: 1rem;
+            left: 1.2rem;
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-secondary);
             z-index: 2;
-            transition: color 0.3s ease;
+            transition: color 0.4s ease, transform 0.4s ease;
+            font-size: 1.2rem;
+        }
+        
+        .input-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient);
+            border-radius: 14px;
+            filter: blur(15px);
+            opacity: 0;
+            z-index: 0;
+            transition: opacity 0.4s ease;
         }
         
         input {
             width: 100%;
-            padding: 1rem 1rem 1rem 3rem;
-            background: rgba(15, 23, 42, 0.7);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            padding: 1.2rem 1.2rem 1.2rem 3.5rem;
+            background: rgba(10, 10, 15, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
             color: var(--text-primary);
-            font-size: 1rem;
+            font-size: 1.05rem;
             font-weight: 400;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
             outline: none;
+            position: relative;
+            z-index: 1;
+            letter-spacing: 0.5px;
         }
         
         input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-            background: rgba(15, 23, 42, 0.9);
+            border-color: transparent;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+            background: rgba(10, 10, 15, 0.9);
+            transform: translateY(-3px);
         }
         
         input:focus + .input-icon {
             color: var(--primary);
+            transform: translateY(-50%) scale(1.2);
+        }
+        
+        input:focus ~ .input-glow {
+            opacity: 0.3;
         }
         
         input::placeholder {
             color: var(--text-secondary);
+            letter-spacing: 0.5px;
         }
         
-        /* Checkboxes */
+        /* Checkboxes with glow */
         .checkbox-container {
             display: flex;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.2rem;
             position: relative;
             cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+        
+        .checkbox-container:hover {
+            background: rgba(255, 255, 255, 0.03);
         }
         
         .checkbox-container input[type="checkbox"] {
@@ -309,29 +510,46 @@
         }
         
         .checkbox-custom {
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            margin-right: 0.75rem;
+            border-radius: 8px;
+            margin-right: 0.9rem;
             position: relative;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
             background: rgba(15, 23, 42, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .checkbox-custom::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
         
         .checkbox-container input[type="checkbox"]:checked + .checkbox-custom {
-            background: var(--primary);
             border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+        }
+        
+        .checkbox-container input[type="checkbox"]:checked + .checkbox-custom::before {
+            opacity: 1;
         }
         
         .checkbox-container input[type="checkbox"]:checked + .checkbox-custom::after {
             content: '✓';
             position: absolute;
             color: white;
-            font-size: 0.9rem;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            font-size: 1rem;
+            font-weight: bold;
+            z-index: 2;
         }
         
         .checkbox-label {
@@ -352,196 +570,279 @@
             color: var(--primary-dark);
         }
         
-        .checkbox-label a::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 0;
-            height: 1px;
-            background: var(--primary);
-            transition: width 0.3s ease;
-        }
-        
-        .checkbox-label a:hover::after {
-            width: 100%;
-        }
-        
-        /* hCaptcha */
+        /* hCaptcha container */
         .h-captcha {
-            margin: 1.5rem 0;
+            margin: 2rem 0;
             display: flex;
             justify-content: center;
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
             transform: scale(0.95);
             transform-origin: center;
-            transition: transform 0.3s ease;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
         }
         
         .h-captcha:hover {
             transform: scale(1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
         
-        /* Buttons */
+        /* Buttons with advanced effects */
         .btn {
             width: 100%;
-            padding: 1rem;
+            padding: 1.2rem;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            font-size: 1.05rem;
+            cursor: none;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.75rem;
-            margin-bottom: 0.75rem;
+            gap: 0.9rem;
+            margin-bottom: 0.9rem;
             position: relative;
             overflow: hidden;
+            letter-spacing: 0.5px;
+            z-index: 1;
         }
         
         .btn::before {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.7s ease;
         }
         
         .btn:hover::before {
-            width: 300px;
-            height: 300px;
+            left: 100%;
+        }
+        
+        .btn-glow {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: var(--gradient);
+            border-radius: 20px;
+            filter: blur(20px);
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.5s ease;
+        }
+        
+        .btn:hover .btn-glow {
+            opacity: 0.5;
         }
         
         .btn-primary {
             background: var(--gradient);
             color: white;
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+            transform: translateY(0);
         }
         
         .btn-primary:hover {
-            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.5);
-            transform: translateY(-3px);
+            box-shadow: 0 20px 50px rgba(99, 102, 241, 0.6);
+            transform: translateY(-5px);
         }
         
         .btn-outline {
             background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.15);
             color: var(--text-primary);
         }
         
         .btn-outline:hover {
             background: rgba(255, 255, 255, 0.05);
             border-color: rgba(255, 255, 255, 0.3);
-            transform: translateY(-3px);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
         
         /* Verification section */
         #verifySection {
             display: none;
-            margin-top: 1.5rem;
-            padding: 1.5rem;
-            background: rgba(15, 23, 42, 0.5);
-            border-radius: 16px;
+            margin-top: 2rem;
+            padding: 2rem;
+            background: rgba(10, 10, 15, 0.6);
+            border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            animation: fadeIn 0.5s ease;
+            animation: fadeIn 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #verifySection::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--gradient);
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         
         .verification-title {
-            font-size: 1.1rem;
-            margin-bottom: 0.75rem;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
             color: var(--text-primary);
             font-weight: 500;
+            text-align: center;
         }
         
-        /* Output message */
+        /* Output message with advanced animations */
         #output {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            border-radius: 12px;
+            margin-top: 2rem;
+            padding: 1.2rem;
+            border-radius: 14px;
             text-align: center;
-            font-size: 0.95rem;
+            font-size: 1rem;
             font-weight: 500;
-            transition: all 0.3s ease;
-            min-height: 3.5rem;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            min-height: 4rem;
             display: flex;
             align-items: center;
             justify-content: center;
             animation: fadeIn 0.5s ease;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        #output::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: inherit;
+            filter: blur(5px);
+            z-index: -1;
         }
         
         .success {
-            background: rgba(34, 197, 94, 0.1);
+            background: rgba(34, 197, 94, 0.15);
             color: var(--success);
-            border: 1px solid rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.2);
         }
         
         .error {
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(239, 68, 68, 0.15);
             color: var(--error);
-            border: 1px solid rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.2);
         }
         
         .info {
-            background: rgba(99, 102, 241, 0.1);
+            background: rgba(99, 102, 241, 0.15);
             color: var(--primary);
-            border: 1px solid rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2);
         }
         
         /* Footer links */
         .footer-links {
             display: flex;
             justify-content: space-between;
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
+            margin-top: 2.5rem;
+            padding-top: 2rem;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+        
+        .footer-links::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background: var(--gradient);
+            border-radius: 0 0 5px 5px;
         }
         
         .footer-link {
             color: var(--text-secondary);
             text-decoration: none;
             font-size: 0.9rem;
-            transition: color 0.3s ease;
+            transition: all 0.4s ease;
             position: relative;
+            padding: 0.5rem;
+            border-radius: 8px;
         }
         
         .footer-link:hover {
             color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            transform: translateY(-3px);
         }
         
-        /* Responsive */
-        @media (max-width: 480px) {
-            .login-card {
-                padding: 2rem 1.5rem;
-                border-radius: 20px;
-            }
-            
-            .title h1 {
-                font-size: 1.8rem;
-            }
-            
-            .btn {
-                padding: 0.9rem;
-            }
+        /* Audio controls */
+        .audio-controls {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1000;
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .audio-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(20, 20, 30, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: none;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        .audio-btn:hover {
+            background: rgba(99, 102, 241, 0.3);
+            transform: scale(1.1);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Immersive effects overlay */
+        .effects-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9997;
+            mix-blend-mode: screen;
+            opacity: 0.05;
         }
         
         /* Loading animation */
         .loading {
             display: inline-block;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
@@ -552,62 +853,91 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Particle effect */
-        .particles {
+        /* Shake animation */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        /* Screen flash effect */
+        .screen-flash {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
-        
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
             background: white;
-            border-radius: 50%;
+            z-index: 9999;
             opacity: 0;
-            animation: particle-float 15s infinite linear;
+            pointer-events: none;
+            animation: flash 0.5s ease-out;
         }
         
-        @keyframes particle-float {
-            0% {
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
+        @keyframes flash {
+            0% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-card {
+                padding: 2rem 1.5rem;
+                border-radius: 24px;
+                max-width: 90%;
             }
-            10% {
-                opacity: 0.7;
+            
+            .title h1 {
+                font-size: 2rem;
             }
-            90% {
-                opacity: 0.7;
+            
+            .cursor, .cursor-follower {
+                display: none;
             }
-            100% {
-                transform: translateY(-100px) rotate(360deg);
-                opacity: 0;
+            
+            * {
+                cursor: auto !important;
             }
         }
         
-        /* Glitch effect for errors */
-        .glitch {
-            animation: glitch 0.5s linear;
+        /* Keyboard hint */
+        .keyboard-hint {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 30, 0.8);
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+            animation: fadeIn 1s ease 2s both;
         }
         
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            20% { transform: translate(-2px, 2px); }
-            40% { transform: translate(-2px, -2px); }
-            60% { transform: translate(2px, 2px); }
-            80% { transform: translate(2px, -2px); }
-            100% { transform: translate(0); }
+        .key {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin: 0 0.2rem;
+            font-family: monospace;
         }
     </style>
 </head>
 <body>
     <!-- Animated background -->
     <div class="background-animation"></div>
+    
+    <!-- Noise overlay -->
+    <div class="noise-overlay"></div>
+    
+    <!-- Particle canvas -->
+    <canvas id="particle-canvas"></canvas>
     
     <!-- Floating shapes -->
     <div class="floating-shapes">
@@ -616,38 +946,62 @@
         <div class="shape"></div>
     </div>
     
-    <!-- Particles -->
-    <div class="particles" id="particles"></div>
+    <!-- Custom cursor -->
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+    
+    <!-- Effects overlay -->
+    <div class="effects-overlay"></div>
+    
+    <!-- Keyboard hint -->
+    <div class="keyboard-hint animate__animated animate__fadeInUp">
+        <span>Press <span class="key">Enter</span> to submit • <span class="key">Esc</span> to reset</span>
+    </div>
+    
+    <!-- Audio controls -->
+    <div class="audio-controls">
+        <button id="muteBtn" class="audio-btn">
+            <i class="fas fa-volume-up"></i>
+        </button>
+        <button id="effectsBtn" class="audio-btn">
+            <i class="fas fa-bolt"></i>
+        </button>
+    </div>
     
     <!-- Main container -->
     <div class="container">
-        <div class="login-card animate__animated animate__fadeInUp">
+        <div class="login-card">
             <!-- Card glow effect -->
             <div class="card-glow"></div>
+            
+            <!-- Card particles -->
+            <div class="card-particles" id="cardParticles"></div>
             
             <!-- Logo -->
             <div class="logo-container">
                 <div class="logo-wrapper">
-                    <div class="logo-glow"></div>
+                    <div class="logo-hologram"></div>
                     <img src="/icon/Vibro.ico?v=1" alt="Vibro Logo" class="logo">
                 </div>
             </div>
             
             <!-- Title -->
             <div class="title">
-                <h1>Welcome Back</h1>
-                <p>Sign in to access your Vibro account</p>
+                <h1>IMMERSIVE LOGIN</h1>
+                <p>Enter the Vibro experience</p>
             </div>
             
             <!-- Email input -->
             <div class="input-group">
                 <i class="fas fa-envelope input-icon"></i>
+                <div class="input-glow"></div>
                 <input type="email" id="email" placeholder="Email address" required>
             </div>
             
             <!-- Password input -->
             <div class="input-group">
                 <i class="fas fa-lock input-icon"></i>
+                <div class="input-glow"></div>
                 <input type="password" id="password" placeholder="Password" required>
             </div>
             
@@ -670,6 +1024,7 @@
             
             <!-- Login button -->
             <button id="loginBtn" class="btn btn-primary">
+                <span class="btn-glow"></span>
                 <i class="fas fa-sign-in-alt"></i>
                 <span>Sign In</span>
             </button>
@@ -685,9 +1040,11 @@
                 <p class="verification-title">Enter verification code sent to your email:</p>
                 <div class="input-group">
                     <i class="fas fa-shield-alt input-icon"></i>
+                    <div class="input-glow"></div>
                     <input type="text" id="verificationCode" placeholder="Verification code">
                 </div>
                 <button id="verifyBtn" class="btn btn-primary">
+                    <span class="btn-glow"></span>
                     <i class="fas fa-check-circle"></i>
                     <span>Verify & Continue</span>
                 </button>
@@ -705,11 +1062,253 @@
         </div>
     </div>
     
+    <!-- Screen flash effect -->
+    <div class="screen-flash" id="screenFlash"></div>
+    
     <!-- hCaptcha -->
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
     
     <script>
-        // DOM Elements
+        // ==================== AUDIO SYSTEM ====================
+        // Create audio context
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioContext = new AudioContext();
+        
+        // Sound effects
+        const sounds = {
+            click: new Howl({
+                src: ['https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3'],
+                volume: 0.3,
+                rate: 1.2
+            }),
+            hover: new Howl({
+                src: ['https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3'],
+                volume: 0.2,
+                rate: 1.5
+            }),
+            success: new Howl({
+                src: ['https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3'],
+                volume: 0.4
+            }),
+            error: new Howl({
+                src: ['https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3'],
+                volume: 0.3
+            }),
+            typing: new Howl({
+                src: ['https://assets.mixkit.co/sfx/preview/mixkit-keyboard-tap-1335.mp3'],
+                volume: 0.1,
+                sprite: {
+                    type: [0, 100]
+                }
+            }),
+            whoosh: new Howl({
+                src: ['https://assets.mixkit.co/sfx/preview/mixkit-whoosh-1126.mp3'],
+                volume: 0.2
+            }),
+            ambient: new Howl({
+                src: ['https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3'],
+                volume: 0.05,
+                loop: true,
+                autoplay: true
+            })
+        };
+        
+        // Audio state
+        let audioEnabled = true;
+        let effectsEnabled = true;
+        
+        // ==================== CUSTOM CURSOR ====================
+        const cursor = document.querySelector('.cursor');
+        const cursorFollower = document.querySelector('.cursor-follower');
+        let mouseX = 0, mouseY = 0;
+        let followerX = 0, followerY = 0;
+        
+        // Mouse movement
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            // Play hover sound if enabled
+            if (effectsEnabled && audioEnabled) {
+                sounds.whoosh.play();
+            }
+        });
+        
+        // Cursor animation loop
+        function animateCursor() {
+            // Main cursor
+            cursor.style.left = mouseX - 12 + 'px';
+            cursor.style.top = mouseY - 12 + 'px';
+            
+            // Follower cursor with delay
+            followerX += (mouseX - followerX - 30) * 0.1;
+            followerY += (mouseY - followerY - 30) * 0.1;
+            
+            cursorFollower.style.left = followerX + 'px';
+            cursorFollower.style.top = followerY + 'px';
+            
+            requestAnimationFrame(animateCursor);
+        }
+        
+        // Cursor interactions
+        document.querySelectorAll('button, input, a, label').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                cursor.classList.add('hover');
+                cursorFollower.classList.add('hover');
+                
+                if (effectsEnabled && audioEnabled) {
+                    sounds.hover.play();
+                }
+            });
+            
+            el.addEventListener('mouseleave', () => {
+                cursor.classList.remove('hover');
+                cursorFollower.classList.remove('hover');
+            });
+        });
+        
+        // Click effect
+        document.addEventListener('mousedown', () => {
+            cursor.classList.add('click');
+            
+            if (effectsEnabled && audioEnabled) {
+                sounds.click.play();
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            cursor.classList.remove('click');
+        });
+        
+        // ==================== PARTICLE SYSTEM ====================
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        // Particle class
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = Math.random() * 2 - 1;
+                this.speedY = Math.random() * 2 - 1;
+                this.color = `rgba(${Math.floor(Math.random() * 100 + 155)}, 
+                                  ${Math.floor(Math.random() * 100 + 100)}, 
+                                  ${Math.floor(Math.random() * 255)}, 
+                                  ${Math.random() * 0.5 + 0.2})`;
+                this.wobble = Math.random() * Math.PI * 2;
+            }
+            
+            update() {
+                this.x += this.speedX + Math.sin(this.wobble) * 0.5;
+                this.y += this.speedY + Math.cos(this.wobble) * 0.5;
+                this.wobble += 0.05;
+                
+                // Boundary check
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+                if (this.y > canvas.height) this.y = 0;
+                if (this.y < 0) this.y = canvas.height;
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                // Add glow effect
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+                ctx.fillStyle = this.color.replace(')', ', 0.1)').replace('rgba', 'rgba');
+                ctx.fill();
+            }
+        }
+        
+        // Create particles
+        function createParticles() {
+            particles = [];
+            const particleCount = Math.min(100, Math.floor((canvas.width * canvas.height) / 15000));
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+        
+        // Animation loop
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw gradient background
+            const gradient = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) / 2
+            );
+            gradient.addColorStop(0, 'rgba(10, 10, 15, 0.1)');
+            gradient.addColorStop(1, 'rgba(10, 10, 15, 0.8)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw particles
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            
+            requestAnimationFrame(animateParticles);
+        }
+        
+        // ==================== CARD PARTICLE EFFECT ====================
+        function createCardParticles() {
+            const container = document.getElementById('cardParticles');
+            const card = document.querySelector('.login-card');
+            const rect = card.getBoundingClientRect();
+            
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('card-particle');
+                
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.background = `rgba(${Math.floor(Math.random() * 100 + 155)}, 
+                                                 ${Math.floor(Math.random() * 100 + 100)}, 
+                                                 ${Math.floor(Math.random() * 255)}, 
+                                                 ${Math.random() * 0.5 + 0.3})`;
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = Math.random() * 10 + 20 + 's';
+                
+                container.appendChild(particle);
+            }
+        }
+        
+        // ==================== SCREEN FLASH EFFECT ====================
+        function screenFlash(color = 'white') {
+            const flash = document.getElementById('screenFlash');
+            flash.style.background = color;
+            flash.style.animation = 'none';
+            flash.offsetHeight; // Trigger reflow
+            flash.style.animation = 'flash 0.5s ease-out';
+        }
+        
+        // ==================== TYPING SOUND EFFECT ====================
+        let lastTypingTime = 0;
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', () => {
+                const now = Date.now();
+                if (now - lastTypingTime > 100 && audioEnabled && effectsEnabled) {
+                    sounds.typing.play('type');
+                    lastTypingTime = now;
+                }
+            });
+        });
+        
+        // ==================== LOGIN SYSTEM ====================
         const output = document.getElementById('output');
         const verifySection = document.getElementById('verifySection');
         const loginBtn = document.getElementById('loginBtn');
@@ -717,41 +1316,26 @@
         let pendingLoginData = null;
         let isProcessing = false;
         
-        // Create particle effect
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            const particleCount = 50;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.classList.add('particle');
-                
-                // Random position and size
-                particle.style.left = Math.random() * 100 + 'vw';
-                particle.style.width = Math.random() * 2 + 1 + 'px';
-                particle.style.height = particle.style.width;
-                particle.style.background = `rgba(99, 102, 241, ${Math.random() * 0.5 + 0.2})`;
-                particle.style.animationDelay = Math.random() * 15 + 's';
-                particle.style.animationDuration = Math.random() * 10 + 15 + 's';
-                
-                particlesContainer.appendChild(particle);
-            }
-        }
-        
-        // Show message with animation
+        // Show message with effects
         function showMessage(message, type = 'info') {
             output.textContent = message;
             output.className = '';
-            output.classList.add(type);
-            output.classList.add('animate__animated', 'animate__fadeIn');
+            output.classList.add(type, 'animate__animated', 'animate__fadeIn');
             
-            // Add glitch effect for errors
-            if (type === 'error') {
-                output.classList.add('glitch');
-                setTimeout(() => output.classList.remove('glitch'), 500);
+            // Sound effects
+            if (audioEnabled && effectsEnabled) {
+                if (type === 'success') {
+                    sounds.success.play();
+                    screenFlash('rgba(34, 197, 94, 0.3)');
+                } else if (type === 'error') {
+                    sounds.error.play();
+                    screenFlash('rgba(239, 68, 68, 0.3)');
+                    output.classList.add('animate__shakeX');
+                    setTimeout(() => output.classList.remove('animate__shakeX'), 1000);
+                }
             }
             
-            // Auto-hide info messages after 5 seconds
+            // Auto-hide info messages
             if (type === 'info') {
                 setTimeout(() => {
                     if (output.textContent === message) {
@@ -765,7 +1349,7 @@
             }
         }
         
-        // Toggle loading state on buttons
+        // Loading animation
         function setLoading(button, isLoading) {
             if (isLoading) {
                 const originalHTML = button.innerHTML;
@@ -781,13 +1365,13 @@
             isProcessing = isLoading;
         }
         
-        // Get fingerprint
+        // Generate fingerprint
         function getFingerprint() {
             return navigator.userAgent + navigator.language + screen.width + screen.height + 
                    new Date().getTimezoneOffset() + (navigator.plugins.length || 0);
         }
         
-        // REAL API CALL - Login function
+        // Login handler
         async function handleLogin() {
             if (isProcessing) return;
             
@@ -796,17 +1380,25 @@
             const remember_me = document.getElementById('rememberMe').checked;
             const acceptTerms = document.getElementById('acceptTerms').checked;
             
-            // Validation
+            // Validation with effects
             if (!acceptTerms) {
                 showMessage("You must agree to the Terms of Service.", "error");
-                document.getElementById('acceptTerms').parentElement.classList.add('animate__animated', 'animate__shakeX');
-                setTimeout(() => document.getElementById('acceptTerms').parentElement.classList.remove('animate__animated', 'animate__shakeX'), 1000);
+                const checkbox = document.getElementById('acceptTerms').parentElement;
+                checkbox.classList.add('animate__animated', 'animate__shakeX');
+                setTimeout(() => checkbox.classList.remove('animate__animated', 'animate__shakeX'), 1000);
+                
+                if (effectsEnabled) {
+                    checkbox.style.animation = 'shake 0.5s';
+                    setTimeout(() => checkbox.style.animation = '', 500);
+                }
                 return;
             }
             
             const captcha_token = hcaptcha.getResponse();
             if (!captcha_token) {
                 showMessage("Please complete the CAPTCHA.", "error");
+                document.querySelector('.h-captcha').classList.add('animate__animated', 'animate__shakeX');
+                setTimeout(() => document.querySelector('.h-captcha').classList.remove('animate__animated', 'animate__shakeX'), 1000);
                 return;
             }
             
@@ -815,7 +1407,6 @@
                 return;
             }
             
-            // Email validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
                 showMessage("Please enter a valid email address.", "error");
@@ -826,7 +1417,7 @@
             const fingerprint = getFingerprint();
             
             try {
-                // REAL API CALL - No simulation
+                // Real API call
                 const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 
@@ -843,32 +1434,35 @@
                     })
                 });
                 
-                // Parse the response
                 const data = await res.json();
                 
-                // Handle different response scenarios
                 if (data.verification_required) {
                     showMessage(data.message || "Verification code sent to your email.", "info");
                     pendingLoginData = { email, password, remember_me, fingerprint, accepted_terms: true };
                     
-                    // Show verification section with animation
+                    // Show verification with animation
                     verifySection.style.display = 'block';
                     verifySection.classList.add('animate__animated', 'animate__fadeIn');
+                    
+                    if (audioEnabled && effectsEnabled) {
+                        sounds.whoosh.play();
+                    }
                     
                 } else if (data.success) {
                     showMessage(data.message || "Login successful! Redirecting...", "success");
                     
-                    // Add success animation to the whole card
-                    document.querySelector('.login-card').classList.add('animate__animated', 'animate__pulse');
+                    // Add celebration effects
+                    document.querySelector('.login-card').classList.add('animate__animated', 'animate__tada');
+                    document.querySelector('.logo').classList.add('animate__animated', 'animate__heartBeat');
                     
-                    // Redirect after delay
+                    // Redirect
                     setTimeout(() => {
                         if (data.redirect) {
                             window.location.href = data.redirect;
                         } else {
                             window.location.href = '/profile.html?email=' + encodeURIComponent(email);
                         }
-                    }, 1500);
+                    }, 2000);
                     
                 } else if (data.redirect) {
                     window.location.href = data.redirect;
@@ -884,7 +1478,7 @@
             }
         }
         
-        // REAL API CALL - Verification function
+        // Verification handler
         async function handleVerification() {
             if (!pendingLoginData || isProcessing) return;
             
@@ -897,7 +1491,6 @@
             setLoading(verifyBtn, true);
             
             try {
-                // REAL API CALL - No simulation
                 const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 
@@ -915,17 +1508,16 @@
                 if (data.success) {
                     showMessage(data.message || "Verification successful! Redirecting...", "success");
                     
-                    // Add success animation
+                    // Celebration effects
                     verifySection.classList.add('animate__animated', 'animate__pulse');
                     
-                    // Redirect after delay
                     setTimeout(() => {
                         if (data.redirect) {
                             window.location.href = data.redirect;
                         } else {
                             window.location.href = '/profile.html?email=' + encodeURIComponent(pendingLoginData.email);
                         }
-                    }, 1500);
+                    }, 2000);
                 } else {
                     showMessage(`Error: ${data.error || 'Verification failed'}`, "error");
                     document.getElementById('verificationCode').classList.add('animate__animated', 'animate__shakeX');
@@ -939,19 +1531,24 @@
             }
         }
         
-        // Event Listeners
+        // ==================== EVENT LISTENERS ====================
         loginBtn.addEventListener('click', handleLogin);
         verifyBtn.addEventListener('click', handleVerification);
         
         // Google login
         document.getElementById('googleBtn').addEventListener('click', () => {
             showMessage("Redirecting to Google...", "info");
+            
+            if (audioEnabled && effectsEnabled) {
+                sounds.whoosh.play();
+            }
+            
             setTimeout(() => {
                 window.location.href = '/api/googleRedirect';
-            }, 500);
+            }, 1000);
         });
         
-        // Add Enter key support
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 if (verifySection.style.display === 'block') {
@@ -959,10 +1556,23 @@
                 } else {
                     handleLogin();
                 }
+            } else if (e.key === 'Escape') {
+                document.getElementById('email').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('verificationCode').value = '';
+                showMessage("Form cleared.", "info");
+                
+                if (audioEnabled && effectsEnabled) {
+                    sounds.whoosh.play();
+                }
+            } else if (e.key === 'm' && e.ctrlKey) {
+                toggleMute();
+            } else if (e.key === 'e' && e.ctrlKey) {
+                toggleEffects();
             }
         });
         
-        // Add input focus effects
+        // Input focus effects
         document.querySelectorAll('input').forEach(input => {
             input.addEventListener('focus', function() {
                 this.parentElement.classList.add('animate__animated', 'animate__pulse');
@@ -973,25 +1583,87 @@
             });
         });
         
-        // Initialize particles on load
+        // Audio controls
+        function toggleMute() {
+            audioEnabled = !audioEnabled;
+            const btn = document.getElementById('muteBtn');
+            
+            if (audioEnabled) {
+                btn.innerHTML = '<i class="fas fa-volume-up"></i>';
+                sounds.ambient.volume(0.05);
+                Howler.volume(1);
+                showMessage("Audio enabled", "info");
+            } else {
+                btn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                sounds.ambient.volume(0);
+                Howler.volume(0);
+                showMessage("Audio muted", "info");
+            }
+        }
+        
+        function toggleEffects() {
+            effectsEnabled = !effectsEnabled;
+            const btn = document.getElementById('effectsBtn');
+            
+            if (effectsEnabled) {
+                btn.innerHTML = '<i class="fas fa-bolt"></i>';
+                btn.style.color = 'var(--accent)';
+                showMessage("Effects enabled", "info");
+            } else {
+                btn.innerHTML = '<i class="fas fa-bolt"></i>';
+                btn.style.color = 'var(--text-primary)';
+                showMessage("Effects disabled", "info");
+            }
+        }
+        
+        document.getElementById('muteBtn').addEventListener('click', toggleMute);
+        document.getElementById('effectsBtn').addEventListener('click', toggleEffects);
+        
+        // ==================== INITIALIZATION ====================
         window.addEventListener('load', () => {
+            // Start animations
+            animateCursor();
+            resizeCanvas();
             createParticles();
-            showMessage("Welcome! Please sign in to continue.", "info");
+            animateParticles();
+            createCardParticles();
+            
+            // Welcome message
+            setTimeout(() => {
+                showMessage("Welcome to the immersive Vibro experience. Ready to login?", "info");
+                
+                if (audioEnabled) {
+                    sounds.ambient.play();
+                }
+            }, 1500);
+            
+            // Initialize hCaptcha
+            if (typeof hcaptcha !== 'undefined') {
+                hcaptcha.render(document.querySelector('.h-captcha'), {
+                    sitekey: '2b1cc900-c846-40e8-bf32-dbeeeec2d1c0',
+                    theme: 'dark'
+                });
+            }
         });
         
-        // Debug function to check API response
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            createParticles();
+        });
+        
+        // Test API connection
         async function testApi() {
             try {
                 const testRes = await fetch('/api/login', { method: 'GET' });
                 console.log('API Status:', testRes.status);
-                console.log('API Headers:', testRes.headers);
             } catch (err) {
                 console.error('API test failed:', err);
             }
         }
         
         // Test API on load
-        window.addEventListener('load', testApi);
+        setTimeout(testApi, 3000);
     </script>
 </body>
 </html>
