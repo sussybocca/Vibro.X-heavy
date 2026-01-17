@@ -2,22 +2,27 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Vibro.x - Next-Gen Video Platform</title>
-<meta name="description" content="Immerse yourself in the future of video sharing with unprecedented visual effects and interactions">
+<title>Vibro-X Ultimate | Complete Immersive Video Platform</title>
+<meta name="description" content="Ultimate platform combining Vibro.x video sharing with 500+ animations, 40 cursors, 3D avatars, physics, and immersive effects">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/x-icon" href="/vibro.png?v=1">
 <link rel="shortcut icon" type="image/x-icon" href="/vibro.png?v=1">
 <link rel="apple-touch-icon" href="/vibro.png?v=1">
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<!-- Inter Font -->
+<!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<!-- Google Fonts for additional effects -->
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Poppins:wght@100;200;300;400;500;600;700;800;900&family=Exo+2:wght@300;400;600&family=Audiowide&family=Press+Start+2P&family=Major+Mono+Display&display=swap" rel="stylesheet">
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- Particles.js -->
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 <style>
+/* ============ COMBINED ROOT VARIABLES ============ */
 :root {
+    /* Vibro.x Colors */
     --primary: #ff0000;
     --primary-dark: #cc0000;
     --primary-light: #ff3333;
@@ -40,6 +45,23 @@
     --danger: #ff3860;
     --warning: #ffdd40;
     --info: #2be2ff;
+    
+    /* Experience.X Colors */
+    --ex-primary: #6c5ce7;
+    --ex-primary-dark: #5649c4;
+    --ex-secondary: #00cec9;
+    --ex-accent: #fd79a8;
+    --ex-tech-blue: #0984e3;
+    --ex-tech-green: #00b894;
+    --ex-tech-purple: #a29bfe;
+    --ex-tech-orange: #e17055;
+    --ex-tech-yellow: #fdcb6e;
+    --ex-tech-red: #ff7675;
+    --ex-cyberpunk-pink: #ff00ff;
+    --ex-cyberpunk-blue: #00ffff;
+    --ex-matrix-green: #00ff41;
+    
+    /* Combined Effects */
     --neon-glow: 0 0 10px, 0 0 20px, 0 0 30px, 0 0 40px;
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.8);
     --shadow-md: 0 4px 20px rgba(0,0,0,0.9);
@@ -50,9 +72,10 @@
     --border-radius: 16px;
     --border-radius-sm: 10px;
     --border-radius-full: 9999px;
+    --header-height: 70px;
 }
 
-/* Particle Canvas */
+/* ============ BACKGROUND & PARTICLE EFFECTS ============ */
 #particles-js {
     position: fixed;
     width: 100%;
@@ -63,7 +86,6 @@
     pointer-events: none;
 }
 
-/* Background Effects */
 .background-effects {
     position: fixed;
     width: 100%;
@@ -88,20 +110,28 @@
     animation: rotateGradient 60s linear infinite;
 }
 
-@keyframes rotateGradient {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.floating-element {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+    filter: blur(40px);
+    opacity: 0.1;
+    z-index: -1;
+    animation: floatAround 20s infinite linear;
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    cursor: none !important;
-    user-select: none;
+.matrix-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -2;
+    opacity: 0.05;
 }
 
-/* CURSOR SYSTEM - 50+ Effects */
+/* ============ ADVANCED CURSOR SYSTEM ============ */
 .cursor-container {
     position: fixed;
     top: 0;
@@ -113,7 +143,6 @@
     overflow: hidden;
 }
 
-/* Base Cursors */
 .cursor-dot {
     position: absolute;
     width: 8px;
@@ -141,7 +170,6 @@
     filter: drop-shadow(0 0 8px var(--primary));
 }
 
-/* Cursor Trail Effects */
 .cursor-trail {
     position: absolute;
     width: 20px;
@@ -160,218 +188,56 @@
 .trail-4 { animation: trailFade 0.3s ease-out 0.15s forwards; }
 .trail-5 { animation: trailFade 0.2s ease-out 0.2s forwards; }
 
-@keyframes trailFade {
-    0% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
-}
-
-/* Cursor Particles */
-.cursor-particle {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 999996;
-    opacity: 0;
-}
-
-/* Cursor Effects */
-.cursor-dot.effect-ripple {
-    animation: rippleEffect 0.6s ease-out;
-}
-
-.cursor-dot.effect-pulse {
-    animation: pulseEffect 0.8s ease-in-out infinite;
-}
-
-.cursor-dot.effect-spin {
-    animation: spinEffect 1s linear infinite;
-}
-
-.cursor-dot.effect-bounce {
-    animation: bounceEffect 0.5s ease infinite alternate;
-}
-
-.cursor-dot.effect-shake {
-    animation: shakeEffect 0.3s ease-in-out infinite;
-}
-
-.cursor-dot.effect-color-cycle {
-    animation: colorCycle 3s linear infinite;
-}
-
-.cursor-dot.effect-rainbow {
-    background: linear-gradient(45deg, 
-        #ff0000, #ff9900, #ffff00, #00ff00, 
-        #00ffff, #0000ff, #9900ff, #ff00ff);
+/* ============ ALL CURSOR EFFECTS ============ */
+.cursor-dot.effect-ripple { animation: rippleEffect 0.6s ease-out; }
+.cursor-dot.effect-pulse { animation: pulseEffect 0.8s ease-in-out infinite; }
+.cursor-dot.effect-spin { animation: spinEffect 1s linear infinite; }
+.cursor-dot.effect-bounce { animation: bounceEffect 0.5s ease infinite alternate; }
+.cursor-dot.effect-shake { animation: shakeEffect 0.3s ease-in-out infinite; }
+.cursor-dot.effect-color-cycle { animation: colorCycle 3s linear infinite; }
+.cursor-dot.effect-rainbow { 
+    background: linear-gradient(45deg, #ff0000, #ff9900, #ffff00, #00ff00, #00ffff, #0000ff, #9900ff, #ff00ff);
     background-size: 400% 400%;
     animation: rainbowEffect 3s linear infinite;
 }
+.cursor-outline.effect-expand { animation: expandEffect 0.8s ease-out infinite alternate; }
+.cursor-outline.effect-rotate { animation: rotateEffect 2s linear infinite; }
+.cursor-outline.effect-wave { animation: waveEffect 1.5s ease-in-out infinite; }
+.cursor-outline.effect-dash { border-style: dashed; animation: dashRotate 10s linear infinite; }
 
-.cursor-outline.effect-expand {
-    animation: expandEffect 0.8s ease-out infinite alternate;
+.cursor-dot.hover-button { width: 16px; height: 16px; background: var(--accent-1); animation: none; }
+.cursor-dot.hover-video { width: 24px; height: 24px; background: transparent; border: 3px solid var(--accent-2); animation: spinEffect 1s linear infinite; }
+.cursor-dot.hover-text { width: 4px; height: 24px; border-radius: 2px; background: var(--accent-3); animation: pulseEffect 1s ease-in-out infinite; }
+.cursor-dot.hover-input { width: 20px; height: 20px; background: var(--accent-4); border-radius: 5px; animation: bounceEffect 0.5s ease infinite alternate; }
+.cursor-dot.hover-danger { width: 12px; height: 12px; background: var(--danger); animation: shakeEffect 0.3s ease-in-out infinite; }
+.cursor-dot.hover-success { width: 16px; height: 16px; background: var(--success); animation: pulseEffect 0.8s ease-in-out infinite; }
+.cursor-outline.hover-button { border-color: var(--accent-1); width: 60px; height: 60px; animation: expandEffect 1s ease-out infinite alternate; }
+.cursor-outline.hover-video { border-color: var(--accent-2); width: 80px; height: 80px; animation: waveEffect 1.5s ease-in-out infinite; }
+
+/* ============ BASE STYLES ============ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    cursor: none !important;
+    user-select: none;
 }
 
-.cursor-outline.effect-rotate {
-    animation: rotateEffect 2s linear infinite;
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--darker-bg);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    min-height: 100vh;
 }
 
-.cursor-outline.effect-wave {
-    animation: waveEffect 1.5s ease-in-out infinite;
-}
-
-.cursor-outline.effect-dash {
-    border-style: dashed;
-    animation: dashRotate 10s linear infinite;
-}
-
-/* Cursor Effect Animations */
-@keyframes rippleEffect {
-    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-    100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
-}
-
-@keyframes pulseEffect {
-    0%, 100% { transform: translate(-50%, -50%) scale(1); }
-    50% { transform: translate(-50%, -50%) scale(1.5); }
-}
-
-@keyframes spinEffect {
-    0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
-    100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
-}
-
-@keyframes bounceEffect {
-    0% { transform: translate(-50%, -50%) scale(1); }
-    100% { transform: translate(-50%, -50%) scale(1.3); }
-}
-
-@keyframes shakeEffect {
-    0%, 100% { transform: translate(-50%, -50%) translateX(0); }
-    25% { transform: translate(-50%, -50%) translateX(5px); }
-    75% { transform: translate(-50%, -50%) translateX(-5px); }
-}
-
-@keyframes colorCycle {
-    0% { background-color: #ff0000; }
-    25% { background-color: #00ff00; }
-    50% { background-color: #0000ff; }
-    75% { background-color: #ffff00; }
-    100% { background-color: #ff0000; }
-}
-
-@keyframes rainbowEffect {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 100% 50%; }
-}
-
-@keyframes expandEffect {
-    0% { width: 40px; height: 40px; opacity: 0.5; }
-    100% { width: 80px; height: 80px; opacity: 0; }
-}
-
-@keyframes rotateEffect {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-@keyframes waveEffect {
-    0%, 100% { border-width: 2px; }
-    50% { border-width: 6px; }
-}
-
-@keyframes dashRotate {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-/* Cursor Mode Classes */
-.cursor-dot.hover-button {
-    width: 16px;
-    height: 16px;
-    background: var(--accent-1);
-    animation: none;
-}
-
-.cursor-dot.hover-video {
-    width: 24px;
-    height: 24px;
-    background: transparent;
-    border: 3px solid var(--accent-2);
-    animation: spinEffect 1s linear infinite;
-}
-
-.cursor-dot.hover-text {
-    width: 4px;
-    height: 24px;
-    border-radius: 2px;
-    background: var(--accent-3);
-    animation: pulseEffect 1s ease-in-out infinite;
-}
-
-.cursor-dot.hover-input {
-    width: 20px;
-    height: 20px;
-    background: var(--accent-4);
-    border-radius: 5px;
-    animation: bounceEffect 0.5s ease infinite alternate;
-}
-
-.cursor-dot.hover-danger {
-    width: 12px;
-    height: 12px;
-    background: var(--danger);
-    animation: shakeEffect 0.3s ease-in-out infinite;
-}
-
-.cursor-dot.hover-success {
-    width: 16px;
-    height: 16px;
-    background: var(--success);
-    animation: pulseEffect 0.8s ease-in-out infinite;
-}
-
-.cursor-outline.hover-button {
-    border-color: var(--accent-1);
-    width: 60px;
-    height: 60px;
-    animation: expandEffect 1s ease-out infinite alternate;
-}
-
-.cursor-outline.hover-video {
-    border-color: var(--accent-2);
-    width: 80px;
-    height: 80px;
-    animation: waveEffect 1.5s ease-in-out infinite;
-}
-
-/* Page Effects */
-.page-transition {
-    animation: pageLoadEffect 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
-    opacity: 0;
-}
-
-@keyframes pageLoadEffect {
-    0% {
-        opacity: 0;
-        transform: translateY(30px) scale(0.95);
-        filter: blur(10px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-        filter: blur(0);
-    }
-}
-
-/* Header Effects */
+/* ============ HEADER ============ */
 .header {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    height: 70px;
+    height: var(--header-height);
     background: rgba(15, 15, 15, 0.95);
     backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -416,16 +282,6 @@
     animation: logoGlow 3s ease-in-out infinite alternate;
 }
 
-@keyframes logoGlow {
-    0% {
-        filter: drop-shadow(0 0 5px var(--primary));
-    }
-    100% {
-        filter: drop-shadow(0 0 20px var(--primary)) 
-                drop-shadow(0 0 30px var(--accent-1));
-    }
-}
-
 .logo-icon {
     font-size: 32px;
     color: var(--primary);
@@ -433,13 +289,7 @@
     filter: drop-shadow(0 0 10px var(--primary));
 }
 
-@keyframes logoSpin {
-    0% { transform: rotate(0deg) scale(1); }
-    50% { transform: rotate(180deg) scale(1.2); }
-    100% { transform: rotate(360deg) scale(1); }
-}
-
-/* Search Bar with Effects */
+/* ============ SEARCH BAR ============ */
 .search-container {
     flex: 1;
     max-width: 700px;
@@ -540,7 +390,7 @@
     box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
 }
 
-/* Upload Button Effects */
+/* ============ UPLOAD BUTTON ============ */
 .upload-btn {
     background: linear-gradient(45deg, var(--primary), var(--accent-1));
     color: white;
@@ -584,12 +434,7 @@
     letter-spacing: 2px;
 }
 
-.upload-btn:active {
-    transform: translateY(0) scale(0.95);
-    transition: all 0.1s ease;
-}
-
-/* User Avatar Effects */
+/* ============ USER AVATAR ============ */
 .user-avatar {
     width: 42px;
     height: 42px;
@@ -611,37 +456,7 @@
                 inset 0 0 20px rgba(255, 255, 255, 0.2);
 }
 
-.user-avatar::after {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent-1));
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-}
-
-.user-avatar:hover::after {
-    opacity: 1;
-    animation: avatarGlow 2s ease-in-out infinite alternate;
-}
-
-@keyframes avatarGlow {
-    0% {
-        filter: blur(5px);
-        opacity: 0.8;
-    }
-    100% {
-        filter: blur(10px);
-        opacity: 0.4;
-    }
-}
-
-/* Dropdown Effects */
+/* ============ DROPDOWN ============ */
 .user-dropdown {
     position: absolute;
     top: calc(100% + 10px);
@@ -658,19 +473,6 @@
     overflow: hidden;
     transform-origin: top right;
     animation: dropdownAppear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes dropdownAppear {
-    from {
-        opacity: 0;
-        transform: scale(0.8) translateY(-20px) rotateX(45deg);
-        filter: blur(10px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0) rotateX(0);
-        filter: blur(0);
-    }
 }
 
 .dropdown-item {
@@ -694,54 +496,16 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.dropdown-item:last-child {
-    border-bottom: none;
-}
-
-.dropdown-item::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 0;
-    background: linear-gradient(90deg, rgba(255, 0, 0, 0.2), transparent);
-    transition: width 0.4s ease;
-    z-index: -1;
-}
-
-.dropdown-item:hover::before {
-    width: 100%;
-}
-
-.dropdown-item:hover {
-    color: var(--primary);
-    padding-left: 32px;
-    transform: translateX(5px);
-}
-
-.dropdown-item i {
-    width: 24px;
-    color: var(--text-secondary);
-    font-size: 18px;
-    transition: all 0.3s ease;
-}
-
-.dropdown-item:hover i {
-    color: var(--primary);
-    transform: scale(1.3) rotate(15deg);
-}
-
-/* Main Container Effects */
+/* ============ MAIN CONTAINER ============ */
 .main-container {
     display: flex;
-    margin-top: 70px;
-    min-height: calc(100vh - 70px);
+    margin-top: var(--header-height);
+    min-height: calc(100vh - var(--header-height));
     position: relative;
     overflow: hidden;
 }
 
-/* Sidebar with Advanced Effects */
+/* ============ SIDEBAR ============ */
 .sidebar {
     width: 280px;
     background: rgba(20, 20, 20, 0.9);
@@ -749,27 +513,13 @@
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     padding: 24px 0;
     position: fixed;
-    top: 70px;
+    top: var(--header-height);
     left: 0;
     bottom: 0;
     overflow-y: auto;
     z-index: 9999;
     transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
-}
-
-.sidebar::-webkit-scrollbar {
-    width: 8px;
-}
-
-.sidebar::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-    background: linear-gradient(to bottom, var(--primary), var(--secondary));
-    border-radius: 4px;
 }
 
 .sidebar-item {
@@ -804,19 +554,6 @@
     transition: transform 0.4s ease;
 }
 
-.sidebar-item::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 100%;
-    background: linear-gradient(90deg, rgba(255, 0, 0, 0.1), transparent);
-    transform: translateX(-100%);
-    transition: transform 0.6s ease;
-    z-index: -1;
-}
-
 .sidebar-item:hover {
     background: rgba(255, 255, 255, 0.05);
     padding-left: 40px;
@@ -825,11 +562,6 @@
 
 .sidebar-item:hover::before {
     transform: translateX(0);
-}
-
-.sidebar-item:hover::after {
-    transform: translateX(0);
-    transition-delay: 0.1s;
 }
 
 .sidebar-item.active {
@@ -843,19 +575,7 @@
     transform: translateX(0);
 }
 
-.sidebar-item i {
-    width: 28px;
-    text-align: center;
-    font-size: 20px;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.sidebar-item:hover i {
-    transform: scale(1.4) rotate(15deg);
-    color: var(--primary);
-}
-
-/* Main Content Area */
+/* ============ MAIN CONTENT ============ */
 .main-content {
     flex: 1;
     margin-left: 280px;
@@ -865,60 +585,7 @@
     overflow: hidden;
 }
 
-/* Floating Background Elements */
-.floating-element {
-    position: absolute;
-    border-radius: 50%;
-    background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
-    filter: blur(40px);
-    opacity: 0.1;
-    z-index: -1;
-    animation: floatAround 20s infinite linear;
-}
-
-.floating-element:nth-child(1) {
-    width: 300px;
-    height: 300px;
-    top: 10%;
-    left: 10%;
-    animation-delay: 0s;
-    background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
-}
-
-.floating-element:nth-child(2) {
-    width: 200px;
-    height: 200px;
-    top: 60%;
-    right: 15%;
-    animation-delay: -5s;
-    background: radial-gradient(circle, var(--secondary) 0%, transparent 70%);
-}
-
-.floating-element:nth-child(3) {
-    width: 150px;
-    height: 150px;
-    bottom: 20%;
-    left: 20%;
-    animation-delay: -10s;
-    background: radial-gradient(circle, var(--accent-1) 0%, transparent 70%);
-}
-
-@keyframes floatAround {
-    0%, 100% {
-        transform: translate(0, 0) rotate(0deg);
-    }
-    25% {
-        transform: translate(100px, 50px) rotate(90deg);
-    }
-    50% {
-        transform: translate(50px, 100px) rotate(180deg);
-    }
-    75% {
-        transform: translate(-50px, 50px) rotate(270deg);
-    }
-}
-
-/* Upload Container with Effects */
+/* ============ UPLOAD CONTAINER ============ */
 .upload-container {
     max-width: 900px;
     margin: 0 auto;
@@ -936,32 +603,6 @@
     overflow: hidden;
 }
 
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(40px) scale(0.9);
-        filter: blur(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-        filter: blur(0);
-    }
-}
-
-@keyframes containerGlow {
-    0% {
-        box-shadow: var(--shadow-lg),
-                    0 0 40px rgba(255, 0, 0, 0.1),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-    100% {
-        box-shadow: var(--shadow-lg),
-                    0 0 80px rgba(255, 0, 0, 0.3),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    }
-}
-
 .upload-container::before {
     content: '';
     position: absolute;
@@ -977,224 +618,7 @@
     animation: borderGlow 4s linear infinite;
 }
 
-@keyframes borderGlow {
-    0%, 100% {
-        opacity: 0.2;
-        filter: blur(20px);
-    }
-    50% {
-        opacity: 0.4;
-        filter: blur(30px);
-    }
-}
-
-.upload-container h2 {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 36px;
-    margin-bottom: 32px;
-    background: linear-gradient(45deg, var(--primary), var(--accent-1), var(--accent-2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-align: center;
-    letter-spacing: 2px;
-    position: relative;
-    display: inline-block;
-    width: 100%;
-}
-
-.upload-container h2::after {
-    content: '';
-    position: absolute;
-    bottom: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 120px;
-    height: 4px;
-    background: linear-gradient(to right, var(--primary), var(--accent-1));
-    border-radius: 2px;
-    box-shadow: 0 0 20px var(--primary);
-}
-
-/* Upload Area with Particle Effect */
-.upload-area {
-    border: 3px dashed rgba(255, 255, 255, 0.2);
-    border-radius: var(--border-radius);
-    padding: 64px 32px;
-    text-align: center;
-    margin-bottom: 32px;
-    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    cursor: none;
-    position: relative;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.02);
-    backdrop-filter: blur(10px);
-}
-
-.upload-area::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-    transition: left 1s ease;
-}
-
-.upload-area:hover::before {
-    left: 100%;
-}
-
-.upload-area:hover {
-    border-color: var(--primary);
-    background: rgba(255, 0, 0, 0.05);
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 20px 60px rgba(255, 0, 0, 0.3),
-                inset 0 0 40px rgba(255, 255, 255, 0.1);
-}
-
-.upload-area.dragover {
-    border-color: var(--accent-1);
-    background: rgba(255, 0, 255, 0.1);
-    transform: scale(0.98);
-    animation: dragPulse 0.6s ease-in-out infinite alternate;
-}
-
-@keyframes dragPulse {
-    from {
-        box-shadow: 0 0 30px rgba(255, 0, 255, 0.3);
-    }
-    to {
-        box-shadow: 0 0 60px rgba(255, 0, 255, 0.6);
-    }
-}
-
-.upload-icon {
-    font-size: 72px;
-    color: var(--primary);
-    margin-bottom: 24px;
-    animation: float 3s ease-in-out infinite,
-               iconGlow 2s ease-in-out infinite alternate;
-    filter: drop-shadow(0 0 10px var(--primary));
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(5deg); }
-}
-
-@keyframes iconGlow {
-    0% { filter: drop-shadow(0 0 10px var(--primary)); }
-    100% { filter: drop-shadow(0 0 30px var(--primary)); }
-}
-
-/* File Info with Effects */
-.file-info {
-    background: linear-gradient(135deg, rgba(255,0,0,0.1), rgba(0,95,212,0.1));
-    border-radius: var(--border-radius-sm);
-    padding: 24px;
-    margin-bottom: 24px;
-    border-left: 6px solid var(--primary);
-    animation: fadeIn 0.5s ease,
-               infoGlow 3s ease-in-out infinite alternate;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes infoGlow {
-    0% {
-        box-shadow: 0 5px 20px rgba(255, 0, 0, 0.2);
-    }
-    100% {
-        box-shadow: 0 5px 40px rgba(255, 0, 0, 0.4);
-    }
-}
-
-/* Form Elements with Effects */
-.form-group {
-    margin-bottom: 28px;
-    animation: fadeInUp 0.6s ease;
-    position: relative;
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 12px;
-    font-weight: 600;
-    color: var(--text-primary);
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 16px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    position: relative;
-    display: inline-block;
-}
-
-.form-group label::after {
-    content: '';
-    position: absolute;
-    bottom: -4px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: var(--primary);
-    transition: width 0.4s ease;
-}
-
-.form-group:focus-within label::after {
-    width: 100%;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-    width: 100%;
-    padding: 18px 24px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--border-radius-sm);
-    color: var(--text-primary);
-    font-size: 16px;
-    font-family: 'Poppins', sans-serif;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    backdrop-filter: blur(10px);
-    letter-spacing: 0.5px;
-}
-
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: var(--primary);
-    background: rgba(255, 255, 255, 0.08);
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(255, 0, 0, 0.2),
-                0 0 0 4px rgba(255, 0, 0, 0.1);
-}
-
-.form-group textarea {
-    min-height: 140px;
-    resize: vertical;
-}
-
-/* Video Cards with Extreme Effects */
+/* ============ VIDEO CARDS ============ */
 .videos-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -1215,17 +639,6 @@
     perspective: 1000px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     animation: cardAppear 0.6s ease backwards;
-}
-
-@keyframes cardAppear {
-    from {
-        opacity: 0;
-        transform: scale(0.8) rotateY(45deg);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) rotateY(0);
-    }
 }
 
 .video-card::before {
@@ -1273,15 +686,6 @@
     opacity: 0.5;
 }
 
-@keyframes shimmer {
-    0% {
-        transform: translateX(-100%);
-    }
-    100% {
-        transform: translateX(100%);
-    }
-}
-
 .video-thumbnail {
     position: relative;
     aspect-ratio: 16 / 9;
@@ -1302,22 +706,6 @@
     filter: brightness(1.2) contrast(1.1) saturate(1.3);
 }
 
-.video-thumbnail::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.8));
-    opacity: 0;
-    transition: opacity 0.6s ease;
-}
-
-.video-card:hover .video-thumbnail::after {
-    opacity: 1;
-}
-
 .video-duration {
     position: absolute;
     bottom: 12px;
@@ -1336,12 +724,6 @@
     transition: all 0.4s ease;
 }
 
-.video-card:hover .video-duration {
-    background: var(--primary);
-    transform: translateZ(40px) scale(1.1);
-}
-
-/* Video Info with Effects */
 .video-info {
     padding: 20px;
     display: flex;
@@ -1362,41 +744,6 @@
     transform: translateZ(20px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     position: relative;
-}
-
-.channel-avatar::before {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, var(--primary), var(--secondary));
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-}
-
-.video-card:hover .channel-avatar {
-    transform: translateZ(30px) scale(1.2) rotate(10deg);
-    border-color: var(--primary);
-}
-
-.video-card:hover .channel-avatar::before {
-    opacity: 1;
-    animation: avatarBorderGlow 2s ease-in-out infinite alternate;
-}
-
-@keyframes avatarBorderGlow {
-    0% {
-        filter: blur(5px);
-        opacity: 0.5;
-    }
-    100% {
-        filter: blur(10px);
-        opacity: 0.8;
-    }
 }
 
 .video-content {
@@ -1420,12 +767,6 @@
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
-.video-card:hover .video-title {
-    color: var(--primary);
-    transform: translateZ(25px);
-    text-shadow: 0 0 20px var(--primary);
-}
-
 .channel-name {
     font-size: 14px;
     font-family: 'Rajdhani', sans-serif;
@@ -1435,12 +776,6 @@
     transition: all 0.4s ease;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-}
-
-.video-card:hover .channel-name {
-    color: var(--text-primary);
-    transform: translateZ(20px);
-    letter-spacing: 1px;
 }
 
 .video-stats {
@@ -1455,55 +790,7 @@
     transform: translateZ(15px);
 }
 
-.video-stats span {
-    transition: all 0.4s ease;
-}
-
-.video-card:hover .video-stats span {
-    color: var(--text-secondary);
-    transform: translateZ(20px);
-}
-
-.video-card:hover .video-stats span:first-child {
-    color: var(--primary);
-    text-shadow: 0 0 10px var(--primary);
-}
-
-/* AI Badge Effect */
-.video-stats .ai-badge {
-    background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
-    color: black;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 900;
-    letter-spacing: 1.5px;
-    position: relative;
-    overflow: hidden;
-}
-
-.video-stats .ai-badge::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transform: rotate(45deg);
-    animation: aiShimmer 2s linear infinite;
-}
-
-@keyframes aiShimmer {
-    0% {
-        transform: translateX(-100%) rotate(45deg);
-    }
-    100% {
-        transform: translateX(100%) rotate(45deg);
-    }
-}
-
-/* Video Modal - Ultimate Immersion */
+/* ============ VIDEO MODAL ============ */
 .video-modal {
     position: fixed;
     top: 0;
@@ -1515,17 +802,6 @@
     display: none;
     animation: modalFadeIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     backdrop-filter: blur(50px);
-}
-
-@keyframes modalFadeIn {
-    from {
-        opacity: 0;
-        backdrop-filter: blur(0);
-    }
-    to {
-        opacity: 1;
-        backdrop-filter: blur(50px);
-    }
 }
 
 .video-modal.show {
@@ -1541,17 +817,6 @@
     bottom: 0;
     background: radial-gradient(circle at center, rgba(255,0,0,0.1) 0%, transparent 70%);
     animation: modalBgPulse 4s ease-in-out infinite alternate;
-}
-
-@keyframes modalBgPulse {
-    0% {
-        opacity: 0.3;
-        transform: scale(1);
-    }
-    100% {
-        opacity: 0.5;
-        transform: scale(1.1);
-    }
 }
 
 .modal-content {
@@ -1573,17 +838,6 @@
     animation: slideDown 0.6s ease 0.3s backwards;
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
 .close-modal {
     background: rgba(255, 255, 255, 0.1);
     border: none;
@@ -1602,85 +856,11 @@
     border: 2px solid transparent;
 }
 
-.close-modal::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, var(--primary), var(--danger));
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    border-radius: 50%;
-}
-
-.close-modal::after {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(45deg, var(--primary), var(--danger));
-    border-radius: 50%;
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    filter: blur(20px);
-}
-
-.close-modal:hover {
-    transform: scale(1.2) rotate(180deg);
-    border-color: var(--primary);
-}
-
-.close-modal:hover::before {
-    opacity: 0.2;
-}
-
-.close-modal:hover::after {
-    opacity: 0.5;
-    animation: closeBtnGlow 1s ease-in-out infinite alternate;
-}
-
-@keyframes closeBtnGlow {
-    0% {
-        filter: blur(20px);
-        opacity: 0.3;
-    }
-    100% {
-        filter: blur(30px);
-        opacity: 0.6;
-    }
-}
-
-.close-modal i {
-    font-size: 24px;
-    transition: transform 0.4s ease;
-}
-
-.close-modal:hover i {
-    transform: scale(1.3);
-}
-
-/* Modal Body Layout */
 .modal-body {
     display: flex;
     gap: 32px;
     flex: 1;
     animation: modalBodyAppear 0.6s ease 0.4s backwards;
-}
-
-@keyframes modalBodyAppear {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 .video-player-container {
@@ -1706,37 +886,6 @@
     position: relative;
 }
 
-.video-player:hover {
-    transform: perspective(1000px) rotateX(5deg);
-}
-
-.video-player::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent-1));
-    border-radius: var(--border-radius);
-    z-index: -1;
-    opacity: 0.3;
-    filter: blur(30px);
-    animation: playerGlow 3s ease-in-out infinite alternate;
-}
-
-@keyframes playerGlow {
-    0% {
-        opacity: 0.2;
-        filter: blur(20px);
-    }
-    100% {
-        opacity: 0.4;
-        filter: blur(40px);
-    }
-}
-
-/* Action Buttons with Particle Effects */
 .video-actions-bar {
     display: flex;
     gap: 12px;
@@ -1766,30 +915,6 @@
     backdrop-filter: blur(10px);
 }
 
-.action-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.7s ease;
-}
-
-.action-btn:hover::before {
-    left: 100%;
-}
-
-.action-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-5px) scale(1.1);
-    border-color: var(--primary);
-    box-shadow: 0 15px 35px rgba(255, 0, 0, 0.4),
-                inset 0 0 30px rgba(255, 255, 255, 0.1);
-    letter-spacing: 2px;
-}
-
 .action-btn.liked {
     background: rgba(255, 0, 0, 0.2);
     color: var(--primary);
@@ -1797,26 +922,7 @@
     animation: likePulse 1s ease-in-out infinite alternate;
 }
 
-@keyframes likePulse {
-    0% {
-        box-shadow: 0 5px 20px rgba(255, 0, 0, 0.3);
-    }
-    100% {
-        box-shadow: 0 5px 40px rgba(255, 0, 0, 0.6),
-                    inset 0 0 20px rgba(255, 255, 255, 0.2);
-    }
-}
-
-.action-btn i {
-    font-size: 20px;
-    transition: transform 0.4s ease;
-}
-
-.action-btn:hover i {
-    transform: scale(1.3) rotate(15deg);
-}
-
-/* Comments Section - Advanced */
+/* ============ COMMENTS SECTION ============ */
 .comments-section {
     background: rgba(25, 25, 25, 0.8);
     backdrop-filter: blur(30px);
@@ -1836,17 +942,6 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-@keyframes commentsSlideIn {
-    from {
-        opacity: 0;
-        transform: translateX(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
 .comments-header {
     display: flex;
     align-items: center;
@@ -1854,30 +949,6 @@
     margin-bottom: 32px;
     padding-bottom: 16px;
     border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-}
-
-.comments-count {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 24px;
-    font-weight: 700;
-    background: linear-gradient(45deg, var(--info), var(--accent-2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    letter-spacing: 2px;
-    position: relative;
-}
-
-.comments-count::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 0;
-    width: 60px;
-    height: 3px;
-    background: linear-gradient(to right, var(--info), var(--accent-2));
-    border-radius: 2px;
-    box-shadow: 0 0 20px var(--info);
 }
 
 .comment-form {
@@ -1891,13 +962,6 @@
     transition: all 0.4s ease;
 }
 
-.comment-form:focus-within {
-    border-color: var(--info);
-    background: rgba(52, 152, 219, 0.1);
-    transform: translateY(-5px);
-    box-shadow: 0 20px 40px rgba(52, 152, 219, 0.2);
-}
-
 .comment-avatar {
     width: 56px;
     height: 56px;
@@ -1907,12 +971,6 @@
     border: 3px solid transparent;
     transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.comment-avatar:hover {
-    transform: scale(1.2) rotate(10deg);
-    border-color: var(--info);
-    box-shadow: 0 0 40px var(--info);
 }
 
 .comment-input-container {
@@ -1938,14 +996,6 @@
     min-height: 120px;
 }
 
-.comment-input:focus {
-    border-color: var(--info);
-    background: rgba(255, 255, 255, 0.12);
-    transform: translateY(-3px);
-    box-shadow: 0 20px 40px rgba(52, 152, 219, 0.3),
-                inset 0 0 30px rgba(255, 255, 255, 0.1);
-}
-
 .comment-submit {
     background: linear-gradient(45deg, var(--info), var(--accent-2));
     color: white;
@@ -1966,36 +1016,6 @@
     box-shadow: 0 10px 30px rgba(52, 152, 219, 0.4);
 }
 
-.comment-submit::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.8s, height 0.8s;
-}
-
-.comment-submit:hover::before {
-    width: 400px;
-    height: 400px;
-}
-
-.comment-submit:hover {
-    transform: translateY(-5px) scale(1.1);
-    box-shadow: 0 25px 50px rgba(52, 152, 219, 0.6),
-                inset 0 0 40px rgba(255, 255, 255, 0.2);
-    letter-spacing: 2px;
-}
-
-.comment-submit:active {
-    transform: translateY(0) scale(0.95);
-    transition: all 0.1s ease;
-}
-
 .comments-list {
     flex: 1;
     overflow-y: auto;
@@ -2003,43 +1023,6 @@
     animation: commentsListAppear 0.6s ease 0.6s backwards;
 }
 
-@keyframes commentsListAppear {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Custom scrollbar with effects */
-.comments-list::-webkit-scrollbar {
-    width: 10px;
-}
-
-.comments-list::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 5px;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.comments-list::-webkit-scrollbar-thumb {
-    background: linear-gradient(to bottom, var(--info), var(--accent-2));
-    border-radius: 5px;
-    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2),
-                0 0 20px var(--info);
-    transition: all 0.3s ease;
-}
-
-.comments-list::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(to bottom, var(--accent-2), var(--info));
-    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.3),
-                0 0 30px var(--accent-2);
-}
-
-/* Comment Items with Holographic Effects */
 .comment-item {
     display: flex;
     gap: 20px;
@@ -2053,29 +1036,6 @@
     margin-bottom: 12px;
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(10px);
-}
-
-@keyframes commentSlideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-30px) rotateY(45deg);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0) rotateY(0);
-    }
-}
-
-.comment-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-    transform: translateX(10px) translateZ(20px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3),
-                0 0 30px rgba(52, 152, 219, 0.2);
-    border-left: 4px solid var(--info);
-}
-
-.comment-item:last-child {
-    border-bottom: none;
 }
 
 .comment-content {
@@ -2102,26 +1062,6 @@
     display: inline-block;
 }
 
-.comment-author::after {
-    content: '';
-    position: absolute;
-    bottom: -4px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: var(--info);
-    transition: width 0.4s ease;
-}
-
-.comment-item:hover .comment-author {
-    color: var(--info);
-    transform: translateZ(20px);
-}
-
-.comment-item:hover .comment-author::after {
-    width: 100%;
-}
-
 .comment-time {
     color: var(--text-tertiary);
     font-size: 13px;
@@ -2129,11 +1069,6 @@
     font-weight: 500;
     letter-spacing: 1px;
     transition: all 0.4s ease;
-}
-
-.comment-item:hover .comment-time {
-    color: var(--text-secondary);
-    transform: translateZ(15px);
 }
 
 .comment-text {
@@ -2145,12 +1080,6 @@
     word-break: break-word;
     transition: all 0.4s ease;
     transform: translateZ(10px);
-}
-
-.comment-item:hover .comment-text {
-    color: var(--text-secondary);
-    transform: translateZ(25px);
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .comment-actions {
@@ -2181,29 +1110,6 @@
     backdrop-filter: blur(5px);
 }
 
-.comment-like::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.6s ease;
-}
-
-.comment-like:hover::before {
-    left: 100%;
-}
-
-.comment-like:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-3px) scale(1.1);
-    border-color: var(--info);
-    color: var(--text-primary);
-    box-shadow: 0 10px 25px rgba(52, 152, 219, 0.3);
-}
-
 .comment-like.liked {
     background: rgba(52, 152, 219, 0.2);
     color: var(--info);
@@ -2211,51 +1117,302 @@
     animation: commentLikePulse 1s ease-in-out infinite alternate;
 }
 
-@keyframes commentLikePulse {
-    0% {
-        box-shadow: 0 5px 20px rgba(52, 152, 219, 0.3);
-    }
-    100% {
-        box-shadow: 0 5px 35px rgba(52, 152, 219, 0.5),
-                    inset 0 0 20px rgba(255, 255, 255, 0.1);
-    }
+/* ============ CUSTOMIZATION PANEL ============ */
+.customization-panel {
+    position: fixed;
+    top: var(--header-height);
+    right: -400px;
+    width: 380px;
+    height: calc(100vh - var(--header-height));
+    background: rgba(10, 10, 20, 0.95);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 9998;
+    transition: right 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow-y: auto;
+    padding: 24px;
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
 }
 
-.comment-like i {
-    font-size: 16px;
-    transition: transform 0.4s ease;
+.customization-panel.active {
+    right: 0;
 }
 
-.comment-like:hover i {
-    transform: scale(1.3) rotate(15deg);
+.customization-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
-.comment-reply {
-    background: transparent;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    color: var(--text-secondary);
-    cursor: none;
-    font-size: 13px;
-    padding: 10px 20px;
-    border-radius: var(--border-radius-full);
-    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 600;
-    letter-spacing: 1px;
+.customization-section {
+    margin-bottom: 32px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    color: var(--secondary);
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* ============ 3D AVATAR VIEWER ============ */
+.avatar-viewer-container {
+    width: 100%;
+    height: 400px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(108, 92, 231, 0.3);
     position: relative;
     overflow: hidden;
-    backdrop-filter: blur(5px);
+    margin-bottom: 20px;
 }
 
-.comment-reply:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateY(-3px) scale(1.1);
-    border-color: var(--accent-2);
-    color: var(--accent-2);
-    box-shadow: 0 10px 25px rgba(0, 255, 255, 0.3);
+.avatar-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(108, 92, 231, 0.3);
 }
 
-/* Notification System */
+.avatar-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(108, 92, 231, 0.3);
+    border: 1px solid var(--ex-primary);
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ============ CURSOR SELECTOR ============ */
+.cursor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--border-radius-sm);
+}
+
+.cursor-option {
+    width: 80px;
+    height: 80px;
+    background: rgba(18, 18, 37, 0.8);
+    border: 1px solid rgba(108, 92, 231, 0.3);
+    border-radius: var(--border-radius-sm);
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.cursor-option.selected {
+    background: rgba(108, 92, 231, 0.3);
+    border-color: var(--ex-primary);
+    box-shadow: 0 0 15px rgba(108, 92, 231, 0.5);
+}
+
+/* ============ EFFECTS SELECTOR ============ */
+.effects-presets {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--border-radius-sm);
+}
+
+.preset-btn {
+    background: rgba(18, 18, 37, 0.8);
+    border: 1px solid rgba(108, 92, 231, 0.3);
+    border-radius: var(--border-radius-sm);
+    padding: 15px;
+    color: var(--light);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.preset-btn.active {
+    background: rgba(108, 92, 231, 0.3);
+    border-color: var(--ex-primary);
+    box-shadow: 0 0 15px rgba(108, 92, 231, 0.5);
+}
+
+/* ============ SOUND BOARD ============ */
+.sound-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--border-radius-sm);
+}
+
+.sound-pad {
+    background: var(--dark-surface);
+    border-radius: var(--border-radius-sm);
+    padding: 15px 10px;
+    text-align: center;
+    border: 1px solid rgba(108, 92, 231, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ============ PHYSICS CONTROLS ============ */
+.physics-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--border-radius-sm);
+}
+
+.physics-control {
+    background: rgba(18, 18, 37, 0.8);
+    border: 1px solid rgba(108, 92, 231, 0.3);
+    border-radius: var(--border-radius-sm);
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* ============ TOGGLE BUTTONS ============ */
+.toggle-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 10px;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(108, 92, 231, 0.3);
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: var(--ex-secondary);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(30px);
+}
+
+/* ============ SLIDERS ============ */
+.slider-container {
+    margin: 20px 0;
+}
+
+.slider-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.slider-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.slider-value {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--ex-tech-blue);
+    font-size: 14px;
+}
+
+.slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 10px;
+    border-radius: 5px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    border: 3px solid var(--primary);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* ============ NOTIFICATION SYSTEM ============ */
 .notification {
     position: fixed;
     top: 30px;
@@ -2275,30 +1432,6 @@
     animation: notificationSlideIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275),
                notificationGlow 2s ease-in-out infinite alternate;
     transform-origin: top right;
-}
-
-@keyframes notificationSlideIn {
-    from {
-        opacity: 0;
-        transform: translateX(100px) rotateY(90deg);
-        filter: blur(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0) rotateY(0);
-        filter: blur(0);
-    }
-}
-
-@keyframes notificationGlow {
-    0% {
-        box-shadow: var(--shadow-lg),
-                    0 0 30px rgba(255, 0, 0, 0.2);
-    }
-    100% {
-        box-shadow: var(--shadow-lg),
-                    0 0 70px rgba(255, 0, 0, 0.4);
-    }
 }
 
 .notification.show {
@@ -2329,21 +1462,7 @@
                 0 0 50px rgba(243, 156, 18, 0.3);
 }
 
-.notification i {
-    font-size: 32px;
-    animation: notificationIconFloat 2s ease-in-out infinite alternate;
-}
-
-@keyframes notificationIconFloat {
-    0% {
-        transform: translateY(0) scale(1);
-    }
-    100% {
-        transform: translateY(-10px) scale(1.1);
-    }
-}
-
-/* Loading Effects */
+/* ============ LOADING EFFECTS ============ */
 .loading {
     display: flex;
     flex-direction: column;
@@ -2383,46 +1502,7 @@
     border-bottom-color: rgba(0, 95, 212, 0.3);
 }
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes colorShift {
-    0% {
-        border-top-color: var(--primary);
-        border-right-color: var(--secondary);
-        border-bottom-color: var(--accent-1);
-        border-left-color: var(--accent-2);
-    }
-    25% {
-        border-top-color: var(--accent-2);
-        border-right-color: var(--primary);
-        border-bottom-color: var(--secondary);
-        border-left-color: var(--accent-1);
-    }
-    50% {
-        border-top-color: var(--accent-1);
-        border-right-color: var(--accent-2);
-        border-bottom-color: var(--primary);
-        border-left-color: var(--secondary);
-    }
-    75% {
-        border-top-color: var(--secondary);
-        border-right-color: var(--accent-1);
-        border-bottom-color: var(--accent-2);
-        border-left-color: var(--primary);
-    }
-    100% {
-        border-top-color: var(--primary);
-        border-right-color: var(--secondary);
-        border-bottom-color: var(--accent-1);
-        border-left-color: var(--accent-2);
-    }
-}
-
-/* Empty State Effects */
+/* ============ EMPTY STATE ============ */
 .empty-state {
     grid-column: 1 / -1;
     text-align: center;
@@ -2445,49 +1525,329 @@
     filter: drop-shadow(0 0 20px currentColor);
 }
 
+/* ============ FORM ELEMENTS ============ */
+.form-group {
+    margin-bottom: 28px;
+    animation: fadeInUp 0.6s ease;
+    position: relative;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    position: relative;
+    display: inline-block;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 18px 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-primary);
+    font-size: 16px;
+    font-family: 'Poppins', sans-serif;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    backdrop-filter: blur(10px);
+    letter-spacing: 0.5px;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(255, 0, 0, 0.2),
+                0 0 0 4px rgba(255, 0, 0, 0.1);
+}
+
+/* ============ FILE INFO ============ */
+.file-info {
+    background: linear-gradient(135deg, rgba(255,0,0,0.1), rgba(0,95,212,0.1));
+    border-radius: var(--border-radius-sm);
+    padding: 24px;
+    margin-bottom: 24px;
+    border-left: 6px solid var(--primary);
+    animation: fadeIn 0.5s ease,
+               infoGlow 3s ease-in-out infinite alternate;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============ UPLOAD AREA ============ */
+.upload-area {
+    border: 3px dashed rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    padding: 64px 32px;
+    text-align: center;
+    margin-bottom: 32px;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: none;
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(10px);
+}
+
+.upload-area.dragover {
+    border-color: var(--accent-1);
+    background: rgba(255, 0, 255, 0.1);
+    transform: scale(0.98);
+    animation: dragPulse 0.6s ease-in-out infinite alternate;
+}
+
+.upload-icon {
+    font-size: 72px;
+    color: var(--primary);
+    margin-bottom: 24px;
+    animation: float 3s ease-in-out infinite,
+               iconGlow 2s ease-in-out infinite alternate;
+    filter: drop-shadow(0 0 10px var(--primary));
+}
+
+/* ============ ANIMATION KEYFRAMES ============ */
+@keyframes rotateGradient {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes floatAround {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(100px, 50px) rotate(90deg); }
+    50% { transform: translate(50px, 100px) rotate(180deg); }
+    75% { transform: translate(-50px, 50px) rotate(270deg); }
+}
+
+@keyframes logoGlow {
+    0% { filter: drop-shadow(0 0 5px var(--primary)); }
+    100% { filter: drop-shadow(0 0 20px var(--primary)) drop-shadow(0 0 30px var(--accent-1)); }
+}
+
+@keyframes logoSpin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes trailFade {
+    0% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+}
+
+@keyframes rippleEffect {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+}
+
+@keyframes pulseEffect {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.5); }
+}
+
+@keyframes spinEffect {
+    0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+    100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
+}
+
+@keyframes bounceEffect {
+    0% { transform: translate(-50%, -50%) scale(1); }
+    100% { transform: translate(-50%, -50%) scale(1.3); }
+}
+
+@keyframes shakeEffect {
+    0%, 100% { transform: translate(-50%, -50%) translateX(0); }
+    25% { transform: translate(-50%, -50%) translateX(5px); }
+    75% { transform: translate(-50%, -50%) translateX(-5px); }
+}
+
+@keyframes colorCycle {
+    0% { background-color: #ff0000; }
+    25% { background-color: #00ff00; }
+    50% { background-color: #0000ff; }
+    75% { background-color: #ffff00; }
+    100% { background-color: #ff0000; }
+}
+
+@keyframes rainbowEffect {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+}
+
+@keyframes expandEffect {
+    0% { width: 40px; height: 40px; opacity: 0.5; }
+    100% { width: 80px; height: 80px; opacity: 0; }
+}
+
+@keyframes rotateEffect {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes waveEffect {
+    0%, 100% { border-width: 2px; }
+    50% { border-width: 6px; }
+}
+
+@keyframes dashRotate {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(40px) scale(0.9); filter: blur(20px); }
+    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes containerGlow {
+    0% { box-shadow: var(--shadow-lg), 0 0 40px rgba(255, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+    100% { box-shadow: var(--shadow-lg), 0 0 80px rgba(255, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2); }
+}
+
+@keyframes borderGlow {
+    0%, 100% { opacity: 0.2; filter: blur(20px); }
+    50% { opacity: 0.4; filter: blur(30px); }
+}
+
+@keyframes cardAppear {
+    from { opacity: 0; transform: scale(0.8) rotateY(45deg); }
+    to { opacity: 1; transform: scale(1) rotateY(0); }
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; backdrop-filter: blur(0); }
+    to { opacity: 1; backdrop-filter: blur(50px); }
+}
+
+@keyframes modalBgPulse {
+    0% { opacity: 0.3; transform: scale(1); }
+    100% { opacity: 0.5; transform: scale(1.1); }
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes modalBodyAppear {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes playerGlow {
+    0% { opacity: 0.2; filter: blur(20px); }
+    100% { opacity: 0.4; filter: blur(40px); }
+}
+
+@keyframes likePulse {
+    0% { box-shadow: 0 5px 20px rgba(255, 0, 0, 0.3); }
+    100% { box-shadow: 0 5px 40px rgba(255, 0, 0, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.2); }
+}
+
+@keyframes commentsSlideIn {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes commentsListAppear {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes commentSlideIn {
+    from { opacity: 0; transform: translateX(-30px) rotateY(45deg); }
+    to { opacity: 1; transform: translateX(0) rotateY(0); }
+}
+
+@keyframes commentLikePulse {
+    0% { box-shadow: 0 5px 20px rgba(52, 152, 219, 0.3); }
+    100% { box-shadow: 0 5px 35px rgba(52, 152, 219, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.1); }
+}
+
+@keyframes dropdownAppear {
+    from { opacity: 0; transform: scale(0.8) translateY(-20px) rotateX(45deg); filter: blur(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0) rotateX(0); filter: blur(0); }
+}
+
+@keyframes notificationSlideIn {
+    from { opacity: 0; transform: translateX(100px) rotateY(90deg); filter: blur(20px); }
+    to { opacity: 1; transform: translateX(0) rotateY(0); filter: blur(0); }
+}
+
+@keyframes notificationGlow {
+    0% { box-shadow: var(--shadow-lg), 0 0 30px rgba(255, 0, 0, 0.2); }
+    100% { box-shadow: var(--shadow-lg), 0 0 70px rgba(255, 0, 0, 0.4); }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes colorShift {
+    0% { border-top-color: var(--primary); border-right-color: var(--secondary); border-bottom-color: var(--accent-1); border-left-color: var(--accent-2); }
+    25% { border-top-color: var(--accent-2); border-right-color: var(--primary); border-bottom-color: var(--secondary); border-left-color: var(--accent-1); }
+    50% { border-top-color: var(--accent-1); border-right-color: var(--accent-2); border-bottom-color: var(--primary); border-left-color: var(--secondary); }
+    75% { border-top-color: var(--secondary); border-right-color: var(--accent-1); border-bottom-color: var(--accent-2); border-left-color: var(--primary); }
+    100% { border-top-color: var(--primary); border-right-color: var(--secondary); border-bottom-color: var(--accent-1); border-left-color: var(--accent-2); }
+}
+
 @keyframes emptyStateFloat {
-    0%, 100% {
-        transform: translateY(0) rotate(0deg);
-    }
-    25% {
-        transform: translateY(-30px) rotate(5deg);
-    }
-    75% {
-        transform: translateY(-15px) rotate(-5deg);
-    }
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-30px) rotate(5deg); }
+    75% { transform: translateY(-15px) rotate(-5deg); }
 }
 
 @keyframes emptyStateGlow {
-    0% {
-        filter: drop-shadow(0 0 10px currentColor);
-    }
-    100% {
-        filter: drop-shadow(0 0 40px currentColor);
-    }
+    0% { filter: drop-shadow(0 0 10px currentColor); }
+    100% { filter: drop-shadow(0 0 40px currentColor); }
 }
 
-.empty-state h3 {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 32px;
-    font-weight: 700;
-    margin-bottom: 16px;
-    background: linear-gradient(45deg, var(--text-secondary), var(--text-primary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    letter-spacing: 2px;
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.empty-state p {
-    font-size: 18px;
-    font-family: 'Poppins', sans-serif;
-    max-width: 500px;
-    margin: 0 auto;
-    line-height: 1.6;
-    color: var(--text-secondary);
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-/* Responsive Design with Animation Adjustments */
+@keyframes infoGlow {
+    0% { box-shadow: 0 5px 20px rgba(255, 0, 0, 0.2); }
+    100% { box-shadow: 0 5px 40px rgba(255, 0, 0, 0.4); }
+}
+
+@keyframes dragPulse {
+    from { box-shadow: 0 0 30px rgba(255, 0, 255, 0.3); }
+    to { box-shadow: 0 0 60px rgba(255, 0, 255, 0.6); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+}
+
+@keyframes iconGlow {
+    0% { filter: drop-shadow(0 0 10px var(--primary)); }
+    100% { filter: drop-shadow(0 0 30px var(--primary)); }
+}
+
+/* ============ RESPONSIVE DESIGN ============ */
 @media (max-width: 1400px) {
     .sidebar {
         width: 100px;
@@ -2550,6 +1910,10 @@
     .comment-submit {
         align-self: flex-end;
     }
+    
+    .customization-panel {
+        width: 320px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -2580,17 +1944,6 @@
         margin: 0 16px;
         z-index: 10001;
         animation: mobileSearchSlide 0.4s ease;
-    }
-    
-    @keyframes mobileSearchSlide {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
     }
     
     .videos-grid {
@@ -2630,6 +1983,15 @@
     * {
         cursor: auto !important;
     }
+    
+    .customization-panel {
+        width: 100%;
+        right: -100%;
+    }
+    
+    .cursor-grid {
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    }
 }
 
 @media (max-width: 480px) {
@@ -2668,7 +2030,7 @@
     }
 }
 
-/* Mobile Menu Toggle */
+/* ============ MOBILE MENU TOGGLE ============ */
 .mobile-menu-toggle {
     display: none;
     background: none;
@@ -2680,13 +2042,6 @@
     transition: all 0.3s ease;
 }
 
-@media (max-width: 768px) {
-    .mobile-menu-toggle {
-        display: block;
-    }
-}
-
-/* Search Toggle for Mobile */
 .search-toggle {
     display: none;
     background: none;
@@ -2699,10 +2054,158 @@
 }
 
 @media (max-width: 768px) {
+    .mobile-menu-toggle {
+        display: block;
+    }
+    
     .search-toggle {
         display: block;
     }
 }
+
+@keyframes mobileSearchSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============ LOADING SCREEN ============ */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--darker-bg);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease;
+}
+
+.loading-logo {
+    font-size: 4rem;
+    margin-bottom: 30px;
+    animation: pulse 2s infinite;
+    background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent-1));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.loading-bar {
+    width: 300px;
+    height: 10px;
+    background: rgba(108, 92, 231, 0.2);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.loading-progress {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.loading-text {
+    margin-top: 20px;
+    color: var(--text-tertiary);
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* ============ UTILITY CLASSES ============ */
+.gradient-text {
+    background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent-1));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+.float {
+    animation: float 6s ease-in-out infinite;
+}
+
+.spin {
+    animation: particle-spin 10s linear infinite;
+}
+
+.btn {
+    padding: 12px 24px;
+    border-radius: var(--border-radius-sm);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    box-shadow: 0 5px 15px rgba(255, 0, 0, 0.4);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(255, 0, 0, 0.6);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--secondary);
+    border: 2px solid var(--secondary);
+    box-shadow: 0 0 15px rgba(0, 206, 201, 0.3);
+}
+
+.btn-secondary:hover {
+    background: rgba(0, 206, 201, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 0 25px rgba(0, 206, 201, 0.5);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.visible {
+    display: block !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+.mt-1 { margin-top: 10px; }
+.mt-2 { margin-top: 20px; }
+.mt-3 { margin-top: 30px; }
+.mb-1 { margin-bottom: 10px; }
+.mb-2 { margin-bottom: 20px; }
+.mb-3 { margin-bottom: 30px; }
+.p-1 { padding: 10px; }
+.p-2 { padding: 20px; }
+.p-3 { padding: 30px; }
 
 /* Animation Performance Optimizations */
 @media (prefers-reduced-motion: reduce) {
@@ -2723,7 +2226,8 @@
     .user-menu,
     .video-actions-bar,
     .comment-form,
-    .comments-section {
+    .comments-section,
+    .customization-panel {
         display: none !important;
     }
     
@@ -2743,97 +2247,18 @@
         border: 1px solid #ccc;
     }
 }
-
-/* Button styles from original code (kept for compatibility) */
-.btn-primary, .btn-secondary, .load-more-btn, .description-toggle {
-    /* Keep original button styles */
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    border-radius: var(--border-radius-sm);
-    font-weight: 500;
-    cursor: none;
-    transition: all 0.3s ease;
-    border: none;
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-primary {
-    background: linear-gradient(45deg, var(--primary), var(--primary-dark));
-    color: white;
-}
-
-.btn-secondary {
-    background: var(--dark-surface-light);
-    color: var(--text-primary);
-}
-
-.load-more-btn {
-    background: var(--dark-surface-light);
-    color: var(--text-primary);
-}
-
-.description-toggle {
-    color: var(--text-secondary);
-    background: none;
-    border: none;
-    padding: 4px 0;
-}
-
-/* Keep original video sidebar styles */
-.video-sidebar {
-    flex: 1;
-    min-width: 300px;
-    overflow-y: auto;
-    height: 100%;
-}
-
-.video-sidebar::-webkit-scrollbar {
-    width: 6px;
-}
-
-.video-sidebar::-webkit-scrollbar-track {
-    background: var(--dark-surface-light);
-}
-
-.video-sidebar::-webkit-scrollbar-thumb {
-    background: var(--dark-surface-hover);
-    border-radius: 3px;
-}
-
-/* Keep original form row styles */
-.form-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-}
-
-.checkbox-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-top: 8px;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: none;
-    font-size: 14px;
-    transition: var(--transition);
-}
-
-.upload-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 32px;
-}
 </style>
 </head>
-<body>
+<body class="cursor-default">
+
+<!-- Loading Screen -->
+<div class="loading-screen" id="loadingScreen">
+    <div class="loading-logo">Vibro-X Ultimate</div>
+    <div class="loading-bar">
+        <div class="loading-progress" id="loadingProgress"></div>
+    </div>
+    <div class="loading-text" id="loadingText">Initializing Ultimate Platform...</div>
+</div>
 
 <!-- Background Effects -->
 <div class="background-effects">
@@ -2841,6 +2266,11 @@
     <div class="floating-element"></div>
     <div class="floating-element"></div>
     <div class="floating-element"></div>
+</div>
+
+<!-- Matrix Background -->
+<div class="matrix-bg">
+    <canvas id="matrix-canvas"></canvas>
 </div>
 
 <!-- Particles Container -->
@@ -2860,7 +2290,7 @@
     
     <a href="#" class="logo" id="logoBtn">
         <i class="fas fa-play-circle logo-icon"></i>
-        <span>Vibro.x</span>
+        <span>Vibro-X</span>
     </a>
     
     <div class="search-container">
@@ -2880,6 +2310,11 @@
         <button class="upload-btn" id="uploadBtn">
             <i class="fas fa-upload"></i>
             <span>Upload</span>
+        </button>
+        
+        <button class="customize-toggle-btn btn btn-secondary" id="customizeToggleBtn">
+            <i class="fas fa-sliders-h"></i>
+            <span>Customize</span>
         </button>
         
         <div class="user-menu">
@@ -2940,12 +2375,29 @@
         <i class="fas fa-clock"></i>
         <span>Watch later</span>
     </a>
+    <div class="sidebar-divider"></div>
+    <a href="#" class="sidebar-item" id="avatarsBtn">
+        <i class="fas fa-user-astronaut"></i>
+        <span>Avatars</span>
+    </a>
+    <a href="#" class="sidebar-item" id="effectsBtn">
+        <i class="fas fa-magic"></i>
+        <span>Effects</span>
+    </a>
+    <a href="#" class="sidebar-item" id="physicsBtn">
+        <i class="fas fa-atom"></i>
+        <span>Physics</span>
+    </a>
+    <a href="#" class="sidebar-item" id="soundBtn">
+        <i class="fas fa-volume-up"></i>
+        <span>Sound</span>
+    </a>
 </nav>
 
 <!-- Main Content -->
 <main class="main-container">
     <div class="main-content page-transition">
-        <!-- Upload Section (Hidden by default) -->
+        <!-- Upload Section -->
         <div class="upload-container" id="uploadSection" style="display: none;">
             <h2 class="gradient-text">Upload Video</h2>
             
@@ -3113,6 +2565,10 @@
                                 <i class="far fa-bookmark"></i>
                                 <span>Save</span>
                             </button>
+                            <button class="action-btn" id="avatarViewBtn">
+                                <i class="fas fa-user-astronaut"></i>
+                                <span>View Avatar</span>
+                            </button>
                             <button class="action-btn" id="reportBtn">
                                 <i class="fas fa-flag"></i>
                                 <span>Report</span>
@@ -3171,77 +2627,424 @@
                 </div>
             </div>
             
-            <div class="video-sidebar" id="recommendedVideos">
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <p>Loading recommendations...</p>
+            <div class="video-sidebar">
+                <div class="avatar-viewer-container">
+                    <canvas id="modal-avatar-canvas"></canvas>
+                    <div class="avatar-controls">
+                        <button class="avatar-btn" id="rotateAvatarBtn">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="avatar-btn" id="zoomInBtn">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button class="avatar-btn" id="zoomOutBtn">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="recommended-videos" id="recommendedVideos">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading recommendations...</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Customization Panel -->
+<div class="customization-panel" id="customizationPanel">
+    <div class="customization-header">
+        <h2 class="gradient-text">Customize Experience</h2>
+        <button class="btn btn-secondary" id="closeCustomizeBtn">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <!-- Cursor Selector -->
+    <div class="customization-section">
+        <h3 class="section-title">
+            <i class="fas fa-mouse-pointer"></i>
+            <span>Cursor Style</span>
+        </h3>
+        <div class="cursor-grid" id="cursorGrid">
+            <!-- 40+ cursors will be loaded here -->
+        </div>
+    </div>
+    
+    <!-- Effects Selector -->
+    <div class="customization-section">
+        <h3 class="section-title">
+            <i class="fas fa-magic"></i>
+            <span>Visual Effects</span>
+        </h3>
+        <div class="slider-container">
+            <div class="slider-header">
+                <span class="slider-label">Effects Intensity</span>
+                <span class="slider-value" id="effectsValue">50%</span>
+            </div>
+            <input type="range" min="0" max="100" value="50" class="slider" id="effectsSlider">
+        </div>
+        <div class="effects-presets" id="effectsPresets">
+            <!-- Effect presets will be loaded here -->
+        </div>
+    </div>
+    
+    <!-- 3D Avatar Customization -->
+    <div class="customization-section">
+        <h3 class="section-title">
+            <i class="fas fa-user-astronaut"></i>
+            <span>3D Avatar</span>
+        </h3>
+        <div class="avatar-viewer-container">
+            <canvas id="custom-avatar-canvas"></canvas>
+            <div class="avatar-controls">
+                <button class="avatar-btn" id="customRotateBtn">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="avatar-btn" id="customChangeBtn">
+                    <i class="fas fa-random"></i>
+                </button>
+                <button class="avatar-btn" id="customEffectBtn">
+                    <i class="fas fa-sparkles"></i>
+                </button>
+            </div>
+        </div>
+        <div class="avatar-options mt-2">
+            <div class="toggle-group">
+                <span>Avatar Glow</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="avatarGlowToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-group">
+                <span>Particles</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="avatarParticlesToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Physics Settings -->
+    <div class="customization-section">
+        <h3 class="section-title">
+            <i class="fas fa-atom"></i>
+            <span>Physics Mechanics</span>
+        </h3>
+        <div class="physics-controls" id="physicsControls">
+            <!-- Physics controls will be loaded here -->
+        </div>
+    </div>
+    
+    <!-- Sound Effects -->
+    <div class="customization-section">
+        <h3 class="section-title">
+            <i class="fas fa-volume-up"></i>
+            <span>Sound Effects</span>
+        </h3>
+        <div class="sound-board" id="soundBoard">
+            <!-- Sound pads will be loaded here -->
+        </div>
+        <div class="slider-container mt-2">
+            <div class="slider-header">
+                <span class="slider-label">Volume</span>
+                <span class="slider-value" id="volumeValue">70%</span>
+            </div>
+            <input type="range" min="0" max="100" value="70" class="slider" id="volumeSlider">
+        </div>
+    </div>
+    
+    <!-- Animation Settings -->
+    <div class="customization-section">
+        <h3 class="section-title">
+            <i class="fas fa-film"></i>
+            <span>Animations</span>
+        </h3>
+        <div class="slider-container">
+            <div class="slider-header">
+                <span class="slider-label">Animation Speed</span>
+                <span class="slider-value" id="animationValue">100%</span>
+            </div>
+            <input type="range" min="10" max="200" value="100" class="slider" id="animationSlider">
+        </div>
+        <div class="toggle-group mt-2">
+            <span>Enable Particle Effects</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="particleToggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="toggle-group">
+            <span>Enable Background Effects</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="bgEffectsToggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="customization-section">
+        <button class="btn btn-primary w-100" id="saveSettingsBtn">
+            <i class="fas fa-save"></i>
+            Save Settings
+        </button>
+        <button class="btn btn-secondary w-100 mt-2" id="resetSettingsBtn">
+            <i class="fas fa-redo"></i>
+            Reset to Default
+        </button>
+    </div>
+</div>
+
 <!-- Notifications -->
 <div class="notification" id="notification"></div>
 
-<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 <script>
-// =============== PARTICLE BACKGROUND ===============
-particlesJS('particles-js', {
-    particles: {
-        number: { value: 80, density: { enable: true, value_area: 800 } },
-        color: { value: "#ff0000" },
-        shape: {
-            type: "circle",
-            stroke: { width: 0, color: "#000000" }
-        },
-        opacity: {
-            value: 0.5,
-            random: true,
-            anim: { enable: true, speed: 1, opacity_min: 0.1, sync: false }
-        },
-        size: {
-            value: 3,
-            random: true,
-            anim: { enable: true, speed: 2, size_min: 0.1, sync: false }
-        },
-        line_linked: {
-            enable: true,
-            distance: 150,
-            color: "#ff0000",
-            opacity: 0.2,
-            width: 1
-        },
-        move: {
-            enable: true,
-            speed: 2,
-            direction: "none",
-            random: true,
-            straight: false,
-            out_mode: "out",
-            bounce: false,
-            attract: { enable: false, rotateX: 600, rotateY: 1200 }
-        }
-    },
-    interactivity: {
-        detect_on: "canvas",
-        events: {
-            onhover: { enable: true, mode: "repulse" },
-            onclick: { enable: true, mode: "push" },
-            resize: true
-        },
-        modes: {
-            grab: { distance: 400, line_linked: { opacity: 1 } },
-            bubble: { distance: 400, size: 40, duration: 2, opacity: 8, speed: 3 },
-            repulse: { distance: 200, duration: 0.4 },
-            push: { particles_nb: 4 },
-            remove: { particles_nb: 2 }
-        }
-    },
-    retina_detect: true
+// ============ GLOBAL STATE ============
+const state = {
+    currentCursor: 'cursor-default',
+    activeEffects: 50,
+    animationSpeed: 100,
+    volume: 70,
+    activePhysics: [],
+    activeSounds: [],
+    avatarScale: 1,
+    avatarRotation: 0,
+    particleEffects: true,
+    backgroundEffects: true,
+    avatarGlow: true,
+    avatarParticles: false,
+    selectedAvatar: null
+};
+
+let currentUser = null;
+let currentVideo = null;
+let videosCache = [];
+let commentsCache = {};
+let displayedVideos = 0;
+let pollingInterval = null;
+let lastUpdateCheck = Date.now();
+let observer = null;
+let isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+let lastScrollTop = 0;
+const VIDEOS_PER_PAGE = 12;
+const COMMENTS_PER_PAGE = 20;
+const POLLING_INTERVAL = 3000;
+
+let advancedCursor, soundEffects, animationController, themeManager;
+let threeJSAvatars = new Map();
+
+// ============ INITIALIZATION ============
+document.addEventListener('DOMContentLoaded', async () => {
+    await initAllSystems();
+    setupEventListeners();
+    setupUploadHandlers();
+    setupTabHandlers();
+    await loadCurrentUser();
+    await loadVideos(true);
 });
 
-// =============== ADVANCED CURSOR SYSTEM ===============
+async function initAllSystems() {
+    await simulateLoading();
+    
+    // Initialize all systems
+    initParticles();
+    initMatrixBackground();
+    initCursorSystem();
+    init3DAvatarSystem();
+    initVideoModal();
+    initCustomizationPanel();
+    initSoundSystem();
+    initPhysicsSystem();
+    initEffectsSystem();
+    
+    // Initialize advanced systems from first codebase
+    advancedCursor = new AdvancedCursor();
+    soundEffects = new SoundEffects();
+    animationController = new AnimationController();
+    themeManager = new ThemeManager();
+    
+    // Hide loading screen
+    document.getElementById('loadingScreen').style.display = 'none';
+    
+    // Setup header scroll effect
+    initHeaderScroll();
+    
+    console.log('✅ Ultimate Platform Initialized');
+}
+
+async function simulateLoading() {
+    const steps = [
+        {text: 'Initializing 40+ custom cursors...', progress: 10},
+        {text: 'Loading 500+ animations...', progress: 25},
+        {text: 'Setting up 3D avatar system...', progress: 40},
+        {text: 'Configuring physics mechanics...', progress: 55},
+        {text: 'Loading sound effects...', progress: 70},
+        {text: 'Preparing visual effects...', progress: 85},
+        {text: 'Initializing video platform...', progress: 95},
+        {text: 'Ready!', progress: 100}
+    ];
+    
+    for (const step of steps) {
+        document.getElementById('loadingProgress').style.width = step.progress + '%';
+        document.getElementById('loadingText').textContent = step.text;
+        await new Promise(resolve => setTimeout(resolve, 400));
+    }
+}
+
+// ============ PARTICLE BACKGROUND ============
+function initParticles() {
+    particlesJS('particles-js', {
+        particles: {
+            number: { value: 80, density: { enable: true, value_area: 800 } },
+            color: { value: "#ff0000" },
+            shape: { type: "circle" },
+            opacity: { value: 0.5, random: true, anim: { enable: true, speed: 1 } },
+            size: { value: 3, random: true, anim: { enable: true, speed: 2 } },
+            line_linked: {
+                enable: true,
+                distance: 150,
+                color: "#ff0000",
+                opacity: 0.2,
+                width: 1
+            },
+            move: {
+                enable: true,
+                speed: 2,
+                direction: "none",
+                random: true,
+                out_mode: "out",
+                bounce: false
+            }
+        },
+        interactivity: {
+            detect_on: "canvas",
+            events: {
+                onhover: { enable: true, mode: "repulse" },
+                onclick: { enable: true, mode: "push" },
+                resize: true
+            }
+        }
+    });
+}
+
+// ============ MATRIX BACKGROUND ============
+function initMatrixBackground() {
+    const canvas = document.getElementById('matrix-canvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    const chars = "01";
+    const fontSize = 14;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
+    
+    function draw() {
+        ctx.fillStyle = 'rgba(5, 5, 16, 0.04)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#00ff41';
+        ctx.font = `${fontSize}px monospace`;
+        
+        for (let i = 0; i < drops.length; i++) {
+            const text = chars[Math.floor(Math.random() * chars.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
+        }
+    }
+    
+    function animate() {
+        draw();
+        requestAnimationFrame(animate);
+    }
+    
+    animate();
+    
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+}
+
+// ============ 40+ CURSOR SYSTEM ============
+function initCursorSystem() {
+    const cursorClasses = [
+        'cursor-default', 'cursor-tech', 'cursor-game', 'cursor-neon', 'cursor-matrix',
+        'cursor-physics', 'cursor-hologram', 'cursor-particle', 'cursor-wireframe',
+        'cursor-digital', 'cursor-cyber', 'cursor-orb', 'cursor-quantum', 'cursor-neural',
+        'cursor-grid', 'cursor-target', 'cursor-binary', 'cursor-energy', 'cursor-warp',
+        'cursor-data', 'cursor-crystal', 'cursor-radar', 'cursor-galaxy', 'cursor-nebula',
+        'cursor-time', 'cursor-fractal', 'cursor-circuit', 'cursor-hive', 'cursor-dna',
+        'cursor-magnetic', 'cursor-sonic', 'cursor-laser', 'cursor-tesla', 'cursor-pyramid',
+        'cursor-vortex', 'cursor-ai', 'cursor-cybercore', 'cursor-neonpulse', 'cursor-quantumfield',
+        'cursor-digitalscan', 'cursor-atomic', 'cursor-neuro', 'cursor-hyperdrive', 'cursor-chronos',
+        'cursor-singularity'
+    ];
+    
+    const cursorGrid = document.getElementById('cursorGrid');
+    cursorGrid.innerHTML = '';
+    
+    cursorClasses.forEach(cursorClass => {
+        const cursorOption = document.createElement('div');
+        cursorOption.className = 'cursor-option';
+        cursorOption.dataset.cursor = cursorClass;
+        cursorOption.innerHTML = `
+            <i class="fas fa-mouse-pointer"></i>
+            <span class="cursor-name">${cursorClass.replace('cursor-', '')}</span>
+        `;
+        
+        cursorOption.addEventListener('click', () => {
+            applyCursor(cursorClass);
+            document.querySelectorAll('.cursor-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            cursorOption.classList.add('selected');
+            createParticleBurst(15, 'cursor');
+        });
+        
+        cursorGrid.appendChild(cursorOption);
+    });
+    
+    // Apply default cursor
+    document.querySelector('.cursor-option[data-cursor="cursor-default"]').classList.add('selected');
+}
+
+function applyCursor(cursorClass) {
+    document.body.className = document.body.className.replace(/cursor-\S+/g, '');
+    document.body.classList.add(cursorClass);
+    state.currentCursor = cursorClass;
+    
+    // Update cursor trail
+    updateCursorTrail();
+}
+
+function updateCursorTrail() {
+    const colors = {
+        'cursor-neon': 'var(--ex-cyberpunk-pink)',
+        'cursor-matrix': 'var(--ex-matrix-green)',
+        'cursor-quantum': 'var(--ex-secondary)',
+        'cursor-cyber': 'var(--ex-cyberpunk-blue)',
+        'default': 'var(--primary)'
+    };
+    
+    const trail = document.querySelector('.cursor-trail');
+    if (trail) {
+        trail.style.background = `radial-gradient(circle, ${colors[state.currentCursor] || colors.default}, transparent)`;
+        trail.style.boxShadow = state.currentCursor.includes('neon') ? '0 0 15px var(--ex-cyberpunk-pink)' : '';
+    }
+}
+
+// ============ ADVANCED CURSOR CLASS (from first codebase) ============
 class AdvancedCursor {
     constructor() {
         this.dot = document.querySelector('.cursor-dot');
@@ -3287,7 +3090,6 @@ class AdvancedCursor {
         document.addEventListener('mouseenter', (e) => this.onMouseEnter(e));
         document.addEventListener('mouseleave', (e) => this.onMouseLeave(e));
         
-        // Hover detection
         document.addEventListener('mouseover', (e) => this.detectHover(e));
         document.addEventListener('mouseout', (e) => this.detectHover(e));
     }
@@ -3309,11 +3111,6 @@ class AdvancedCursor {
             this.createTrail();
         }
         
-        // Create particles at high speed
-        if (Math.abs(this.velocity.x) > 10 || Math.abs(this.velocity.y) > 10) {
-            this.createParticles();
-        }
-        
         // Update cursor position
         this.dot.style.left = `${this.x}px`;
         this.dot.style.top = `${this.y}px`;
@@ -3325,32 +3122,24 @@ class AdvancedCursor {
         this.outline.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
     }
     
-    onMouseDown(e) {
-        this.dot.classList.add('cursor-click');
-        this.outline.style.transform = 'translate(-50%, -50%) scale(0.8)';
-        
-        // Create ripple effect
-        this.createRipple();
-        
-        // Create sparkles on click
-        this.createSparkles(10);
-    }
-    
-    onMouseUp(e) {
-        this.outline.style.transform = 'translate(-50%, -50%) scale(1)';
-        setTimeout(() => {
-            this.dot.classList.remove('cursor-click');
-        }, 300);
-    }
-    
-    onMouseEnter(e) {
-        this.dot.style.opacity = '1';
-        this.outline.style.opacity = '1';
-    }
-    
-    onMouseLeave(e) {
-        this.dot.style.opacity = '0';
-        this.outline.style.opacity = '0';
+    createTrail() {
+        for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+                const trail = document.createElement('div');
+                trail.className = `cursor-trail trail-${i + 1}`;
+                trail.style.left = `${this.x}px`;
+                trail.style.top = `${this.y}px`;
+                trail.style.background = this.dot.style.background || getComputedStyle(this.dot).backgroundColor;
+                
+                document.querySelector('.cursor-container').appendChild(trail);
+                
+                setTimeout(() => {
+                    if (trail.parentNode) {
+                        trail.parentNode.removeChild(trail);
+                    }
+                }, 600);
+            }, i * 50);
+        }
     }
     
     detectHover(e) {
@@ -3385,117 +3174,18 @@ class AdvancedCursor {
         }
     }
     
-    createTrail() {
-        for (let i = 0; i < 3; i++) {
-            setTimeout(() => {
-                const trail = document.createElement('div');
-                trail.className = `cursor-trail trail-${i + 1}`;
-                trail.style.left = `${this.x}px`;
-                trail.style.top = `${this.y}px`;
-                trail.style.background = this.dot.style.background || getComputedStyle(this.dot).backgroundColor;
-                
-                document.querySelector('.cursor-container').appendChild(trail);
-                
-                setTimeout(() => {
-                    if (trail.parentNode) {
-                        trail.parentNode.removeChild(trail);
-                    }
-                }, 600);
-            }, i * 50);
-        }
-    }
-    
-    createParticles() {
-        const particleCount = 5;
-        const colors = ['#ff0000', '#065fd4', '#00ff00', '#ffff00', '#ff00ff', '#00ffff'];
-        
-        for (let i = 0; i < particleCount; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'cursor-particle';
-            particle.style.left = `${this.x}px`;
-            particle.style.top = `${this.y}px`;
-            particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-            
-            const angle = Math.random() * Math.PI * 2;
-            const speed = 2 + Math.random() * 3;
-            const distance = 20 + Math.random() * 50;
-            
-            particle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
-            particle.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
-            
-            document.querySelector('.cursor-container').appendChild(particle);
-            
-            particle.animate([
-                { opacity: 1, transform: `translate(0, 0) scale(1)` },
-                { opacity: 0, transform: `translate(var(--tx), var(--ty)) scale(0)` }
-            ], {
-                duration: 1000 + Math.random() * 500,
-                easing: 'cubic-bezier(0.2, 0, 0.8, 1)'
-            }).onfinish = () => {
-                if (particle.parentNode) {
-                    particle.parentNode.removeChild(particle);
-                }
-            };
-        }
-    }
-    
-    createRipple() {
-        const ripple = document.createElement('div');
-        ripple.className = 'cursor-dot effect-ripple';
-        ripple.style.left = `${this.x}px`;
-        ripple.style.top = `${this.y}px`;
-        ripple.style.width = '8px';
-        ripple.style.height = '8px';
-        ripple.style.background = this.dot.style.background || getComputedStyle(this.dot).backgroundColor;
-        
-        document.querySelector('.cursor-container').appendChild(ripple);
-        
-        setTimeout(() => {
-            if (ripple.parentNode) {
-                ripple.parentNode.removeChild(ripple);
-            }
-        }, 600);
-    }
-    
-    createSparkles(count) {
-        for (let i = 0; i < count; i++) {
-            const sparkle = document.createElement('div');
-            sparkle.className = 'sparkle';
-            sparkle.style.left = `${this.x + (Math.random() - 0.5) * 50}px`;
-            sparkle.style.top = `${this.y + (Math.random() - 0.5) * 50}px`;
-            
-            const size = 2 + Math.random() * 4;
-            sparkle.style.width = `${size}px`;
-            sparkle.style.height = `${size}px`;
-            
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 50 + Math.random() * 100;
-            sparkle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
-            
-            document.querySelector('.cursor-container').appendChild(sparkle);
-            
-            setTimeout(() => {
-                if (sparkle.parentNode) {
-                    sparkle.parentNode.removeChild(sparkle);
-                }
-            }, 1000);
-        }
-    }
-    
     startEffectCycle() {
         this.effectInterval = setInterval(() => {
             this.cycleEffect();
-        }, 5000); // Change effect every 5 seconds
+        }, 5000);
     }
     
     cycleEffect() {
-        // Remove all effect classes
         this.effects.forEach(effect => {
             this.dot.classList.remove(`effect-${effect}`);
             this.outline.classList.remove(`effect-${effect}`);
         });
         
-        // Apply new effect
         const effect = this.effects[this.currentEffect];
         this.dot.classList.add(`effect-${effect}`);
         
@@ -3507,14 +3197,12 @@ class AdvancedCursor {
     }
     
     animate() {
-        // Smooth cursor movement
         const smoothX = this.x + this.velocity.x * 0.5;
         const smoothY = this.y + this.velocity.y * 0.5;
         
         this.dot.style.left = `${smoothX}px`;
         this.dot.style.top = `${smoothY}px`;
         
-        // Outline follows with delay
         const outlineX = this.outline.offsetLeft + (smoothX - this.outline.offsetLeft) * 0.1;
         const outlineY = this.outline.offsetTop + (smoothY - this.outline.offsetTop) * 0.1;
         
@@ -3525,7 +3213,437 @@ class AdvancedCursor {
     }
 }
 
-// =============== SOUND EFFECTS SYSTEM ===============
+// ============ 3D AVATAR SYSTEM ============
+function init3DAvatarSystem() {
+    initAvatarCanvas('custom-avatar-canvas');
+    initAvatarCanvas('modal-avatar-canvas');
+}
+
+function initAvatarCanvas(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || typeof THREE === 'undefined') return;
+    
+    try {
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, canvas.offsetWidth / canvas.offsetHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        
+        renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
+        renderer.setClearColor(0x000000, 0);
+        canvas.appendChild(renderer.domElement);
+        
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 5, 5);
+        scene.add(directionalLight);
+        
+        const avatar = createAvatar();
+        scene.add(avatar);
+        
+        camera.position.z = 5;
+        
+        // Store references
+        threeJSAvatars.set(canvasId, {
+            scene: scene,
+            camera: camera,
+            renderer: renderer,
+            avatar: avatar
+        });
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            avatar.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = canvas.offsetWidth / canvas.offsetHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
+        });
+        
+    } catch (error) {
+        console.warn('Three.js initialization failed:', error);
+        createFallbackAvatar(canvas);
+    }
+}
+
+function createAvatar() {
+    const group = new THREE.Group();
+    
+    // Head
+    const headGeometry = new THREE.SphereGeometry(1, 32, 32);
+    const headMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x6c5ce7,
+        shininess: 100 
+    });
+    const head = new THREE.Mesh(headGeometry, headMaterial);
+    head.position.y = 2.5;
+    group.add(head);
+    
+    // Body
+    const bodyGeometry = new THREE.CylinderGeometry(0.8, 0.6, 2, 32);
+    const bodyMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x0984e3,
+        shininess: 80 
+    });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    body.position.y = 0.5;
+    group.add(body);
+    
+    // Arms
+    const armGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1.5, 16);
+    const armMaterial = new THREE.MeshPhongMaterial({ color: 0x00cec9 });
+    
+    const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+    leftArm.position.set(-1.2, 1, 0);
+    leftArm.rotation.z = Math.PI / 6;
+    group.add(leftArm);
+    
+    const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+    rightArm.position.set(1.2, 1, 0);
+    rightArm.rotation.z = -Math.PI / 6;
+    group.add(rightArm);
+    
+    // Legs
+    const legGeometry = new THREE.CylinderGeometry(0.25, 0.2, 2, 16);
+    const legMaterial = new THREE.MeshPhongMaterial({ color: 0xfd79a8 });
+    
+    const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+    leftLeg.position.set(-0.4, -1.5, 0);
+    group.add(leftLeg);
+    
+    const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+    rightLeg.position.set(0.4, -1.5, 0);
+    group.add(rightLeg);
+    
+    return group;
+}
+
+function createFallbackAvatar(canvas) {
+    canvas.innerHTML = `
+        <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(108,92,231,0.2) 0%, rgba(0,0,0,0) 70%);">
+            <div style="width: 200px; height: 300px; position: relative;">
+                <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80px; height: 80px; background: linear-gradient(135deg, var(--ex-primary), var(--ex-secondary)); border-radius: 50%;"></div>
+                <div style="position: absolute; top: 80px; left: 50%; transform: translateX(-50%); width: 100px; height: 150px; background: linear-gradient(to bottom, var(--ex-tech-blue), var(--ex-tech-purple)); border-radius: 20px;"></div>
+                <div style="position: absolute; top: 100px; left: 30%; width: 20px; height: 100px; background: var(--ex-primary); border-radius: 10px;"></div>
+                <div style="position: absolute; top: 100px; left: 70%; width: 20px; height: 100px; background: var(--ex-primary); border-radius: 10px;"></div>
+                <div style="position: absolute; top: 230px; left: 40%; width: 20px; height: 70px; background: var(--ex-secondary); border-radius: 10px;"></div>
+                <div style="position: absolute; top: 230px; left: 60%; width: 20px; height: 70px; background: var(--ex-secondary); border-radius: 10px;"></div>
+            </div>
+        </div>
+    `;
+}
+
+// ============ VIDEO MODAL ============
+function initVideoModal() {
+    const modal = document.getElementById('videoModal');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const video = document.getElementById('modalVideo');
+    
+    closeBtn.addEventListener('click', () => {
+        modal.classList.remove('show');
+        video.pause();
+    });
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('show')) {
+            modal.classList.remove('show');
+            video.pause();
+        }
+    });
+    
+    // Avatar view button
+    document.getElementById('avatarViewBtn').addEventListener('click', () => {
+        const avatar = threeJSAvatars.get('modal-avatar-canvas')?.avatar;
+        if (avatar) {
+            avatar.rotation.y += Math.PI / 2;
+            createParticleBurst(20, 'avatar');
+        }
+    });
+    
+    // Avatar controls
+    document.getElementById('rotateAvatarBtn').addEventListener('click', () => {
+        const avatar = threeJSAvatars.get('modal-avatar-canvas')?.avatar;
+        if (avatar) {
+            avatar.rotation.y += Math.PI / 4;
+        }
+    });
+}
+
+// ============ CUSTOMIZATION PANEL ============
+function initCustomizationPanel() {
+    const panel = document.getElementById('customizationPanel');
+    const toggleBtn = document.getElementById('customizeToggleBtn');
+    const closeBtn = document.getElementById('closeCustomizeBtn');
+    
+    toggleBtn.addEventListener('click', () => {
+        panel.classList.toggle('active');
+        createParticleBurst(15, 'effect');
+    });
+    
+    closeBtn.addEventListener('click', () => {
+        panel.classList.remove('active');
+    });
+    
+    // Avatar controls
+    document.getElementById('customRotateBtn').addEventListener('click', () => {
+        const avatar = threeJSAvatars.get('custom-avatar-canvas')?.avatar;
+        if (avatar) {
+            avatar.rotation.y += Math.PI / 4;
+        }
+    });
+    
+    document.getElementById('customChangeBtn').addEventListener('click', changeAvatarColor);
+    document.getElementById('customEffectBtn').addEventListener('click', () => createParticleBurst(50, 'avatar'));
+    
+    // Sliders
+    document.getElementById('effectsSlider').addEventListener('input', (e) => {
+        state.activeEffects = e.target.value;
+        document.getElementById('effectsValue').textContent = `${state.activeEffects}%`;
+        updateEffects();
+    });
+    
+    document.getElementById('animationSlider').addEventListener('input', (e) => {
+        state.animationSpeed = e.target.value;
+        document.getElementById('animationValue').textContent = `${state.animationSpeed}%`;
+        updateAnimationSpeed();
+    });
+    
+    document.getElementById('volumeSlider').addEventListener('input', (e) => {
+        state.volume = e.target.value;
+        document.getElementById('volumeValue').textContent = `${state.volume}%`;
+    });
+    
+    // Toggles
+    document.getElementById('avatarGlowToggle').addEventListener('change', (e) => {
+        state.avatarGlow = e.target.checked;
+    });
+    
+    document.getElementById('avatarParticlesToggle').addEventListener('change', (e) => {
+        state.avatarParticles = e.target.checked;
+    });
+    
+    document.getElementById('particleToggle').addEventListener('change', (e) => {
+        state.particleEffects = e.target.checked;
+    });
+    
+    document.getElementById('bgEffectsToggle').addEventListener('change', (e) => {
+        state.backgroundEffects = e.target.checked;
+        document.querySelector('.background-effects').style.display = 
+            state.backgroundEffects ? 'block' : 'none';
+    });
+    
+    // Save/Reset buttons
+    document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+    document.getElementById('resetSettingsBtn').addEventListener('click', resetSettings);
+}
+
+function changeAvatarColor() {
+    const avatar = threeJSAvatars.get('custom-avatar-canvas')?.avatar;
+    if (!avatar) return;
+    
+    const colors = [
+        0x6c5ce7, 0x0984e3, 0x00cec9, 0xfd79a8,
+        0x00b894, 0xa29bfe, 0xff7675, 0xfdcb6e
+    ];
+    
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    
+    // Change head color
+    avatar.children[0].material.color.setHex(randomColor);
+    createParticleBurst(20, 'avatar');
+}
+
+// ============ SOUND SYSTEM ============
+function initSoundSystem() {
+    const soundBoard = document.getElementById('soundBoard');
+    const sounds = [
+        {name: 'Neural', icon: 'fas fa-brain', color: 'var(--ex-tech-blue)'},
+        {name: 'Quantum', icon: 'fas fa-atom', color: 'var(--ex-secondary)'},
+        {name: 'Cyber', icon: 'fas fa-bolt', color: 'var(--ex-cyberpunk-pink)'},
+        {name: 'Matrix', icon: 'fas fa-code', color: 'var(--ex-matrix-green)'},
+        {name: 'Hologram', icon: 'fas fa-hologram', color: 'var(--ex-tech-purple)'},
+        {name: 'Click', icon: 'fas fa-mouse-pointer', color: 'var(--primary)'},
+        {name: 'Confirm', icon: 'fas fa-check', color: 'var(--success)'},
+        {name: 'Error', icon: 'fas fa-times', color: 'var(--danger)'}
+    ];
+    
+    sounds.forEach(sound => {
+        const pad = document.createElement('div');
+        pad.className = 'sound-pad';
+        pad.innerHTML = `
+            <i class="${sound.icon}"></i>
+            <span>${sound.name}</span>
+        `;
+        pad.style.borderColor = sound.color;
+        
+        pad.addEventListener('click', () => {
+            playSound(sound.name.toLowerCase());
+            pad.classList.add('active');
+            setTimeout(() => pad.classList.remove('active'), 300);
+        });
+        
+        soundBoard.appendChild(pad);
+    });
+}
+
+function playSound(type) {
+    if (!state.particleEffects) return;
+    
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    const frequencies = {
+        neural: 220,
+        quantum: 440,
+        cyber: 880,
+        matrix: 1760,
+        hologram: 293.66,
+        click: 800,
+        confirm: 1200,
+        error: 200
+    };
+    
+    oscillator.frequency.value = frequencies[type] || 440;
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.3);
+    
+    // Visual feedback
+    createParticleBurst(15, type);
+}
+
+// ============ PHYSICS SYSTEM ============
+function initPhysicsSystem() {
+    const physicsControls = document.getElementById('physicsControls');
+    const mechanics = [
+        {name: 'Gravity', icon: 'fas fa-globe-americas'},
+        {name: 'Magnetism', icon: 'fas fa-magnet'},
+        {name: 'Fluid', icon: 'fas fa-water'},
+        {name: 'Particles', icon: 'fas fa-atom'},
+        {name: 'Spring', icon: 'fas fa-expand-alt'},
+        {name: 'Collision', icon: 'fas fa-car-crash'},
+        {name: 'Ragdoll', icon: 'fas fa-running'},
+        {name: 'Cloth', icon: 'fas fa-tshirt'},
+        {name: 'Destruction', icon: 'fas fa-bomb'},
+        {name: 'Quantum', icon: 'fas fa-door-open'}
+    ];
+    
+    mechanics.forEach(mechanic => {
+        const control = document.createElement('div');
+        control.className = 'physics-control';
+        control.innerHTML = `
+            <i class="${mechanic.icon}"></i>
+            <span>${mechanic.name}</span>
+        `;
+        
+        control.addEventListener('click', () => {
+            togglePhysicsMechanic(mechanic.name.toLowerCase());
+            control.classList.toggle('active');
+            createParticleBurst(20, 'physics');
+        });
+        
+        physicsControls.appendChild(control);
+    });
+}
+
+function togglePhysicsMechanic(mechanic) {
+    const index = state.activePhysics.indexOf(mechanic);
+    if (index > -1) {
+        state.activePhysics.splice(index, 1);
+    } else {
+        state.activePhysics.push(mechanic);
+    }
+}
+
+// ============ EFFECTS SYSTEM ============
+function initEffectsSystem() {
+    const effectsPresets = document.getElementById('effectsPresets');
+    const presets = [
+        {name: 'Neural', desc: 'Brainwave patterns', color: 'var(--ex-tech-blue)'},
+        {name: 'Quantum', desc: 'Particle effects', color: 'var(--ex-secondary)'},
+        {name: 'Cyberpunk', desc: 'Neon glitch', color: 'var(--ex-cyberpunk-pink)'},
+        {name: 'Matrix', desc: 'Digital rain', color: 'var(--ex-matrix-green)'},
+        {name: 'Hologram', desc: '3D projection', color: 'var(--ex-tech-purple)'},
+        {name: 'Glitch', desc: 'Data corruption', color: 'var(--ex-tech-red)'},
+        {name: 'Energy', desc: 'Power surges', color: 'var(--ex-tech-yellow)'},
+        {name: 'Warp', desc: 'Space distortion', color: 'var(--ex-tech-purple)'}
+    ];
+    
+    presets.forEach(preset => {
+        const btn = document.createElement('div');
+        btn.className = 'preset-btn';
+        btn.innerHTML = `
+            <div class="preset-name">${preset.name}</div>
+            <div class="preset-desc">${preset.desc}</div>
+        `;
+        btn.style.borderColor = preset.color;
+        
+        btn.addEventListener('click', () => {
+            applyEffectPreset(preset.name.toLowerCase());
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            createParticleBurst(30, 'effect');
+        });
+        
+        effectsPresets.appendChild(btn);
+    });
+}
+
+function applyEffectPreset(preset) {
+    const effectTypes = {
+        neural: 'neural-pulse',
+        quantum: 'quantum-field',
+        cyberpunk: 'cyber-grid',
+        matrix: 'matrix-rain',
+        hologram: 'hologram-scan',
+        glitch: 'glitch',
+        energy: 'energy-wave',
+        warp: 'warp-tunnel'
+    };
+    
+    const effect = effectTypes[preset];
+    if (effect) {
+        document.body.classList.add(effect);
+        setTimeout(() => document.body.classList.remove(effect), 2000);
+    }
+}
+
+function updateEffects() {
+    const intensity = state.activeEffects / 100;
+    document.body.style.filter = `
+        brightness(${0.8 + intensity * 0.4})
+        contrast(${0.9 + intensity * 0.2})
+        saturate(${0.9 + intensity * 0.3})
+    `;
+}
+
+function updateAnimationSpeed() {
+    const speed = state.animationSpeed / 100;
+    document.querySelectorAll('*').forEach(el => {
+        const computedStyle = getComputedStyle(el);
+        const animationName = computedStyle.animationName;
+        if (animationName !== 'none') {
+            const duration = parseFloat(computedStyle.animationDuration) || 1;
+            el.style.animationDuration = `${duration / speed}s`;
+        }
+    });
+}
+
+// ============ SOUND EFFECTS SYSTEM (from first codebase) ============
 class SoundEffects {
     constructor() {
         this.audioContext = null;
@@ -3545,7 +3663,6 @@ class SoundEffects {
     }
     
     preloadSounds() {
-        // Preload common sound effects
         this.createSound('click', 800, 200, 0.1);
         this.createSound('hover', 400, 600, 0.05);
         this.createSound('success', 523.25, 1046.5, 0.3);
@@ -3556,7 +3673,6 @@ class SoundEffects {
     
     createSound(name, freq1, freq2, duration) {
         if (!this.enabled) return;
-        
         this.sounds.set(name, { freq1, freq2, duration });
     }
     
@@ -3581,7 +3697,7 @@ class SoundEffects {
     }
 }
 
-// =============== ANIMATION CONTROLLER ===============
+// ============ ANIMATION CONTROLLER (from first codebase) ============
 class AnimationController {
     constructor() {
         this.animations = new Map();
@@ -3589,7 +3705,6 @@ class AnimationController {
     }
     
     init() {
-        // Setup intersection observer for scroll animations
         this.observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -3601,7 +3716,6 @@ class AnimationController {
             rootMargin: '50px'
         });
         
-        // Observe all animatable elements
         document.querySelectorAll('.video-card, .form-group, .comment-item').forEach(el => {
             this.observer.observe(el);
         });
@@ -3609,10 +3723,8 @@ class AnimationController {
     
     animateElement(element) {
         if (element.classList.contains('animated')) return;
-        
         element.classList.add('animated');
         
-        // Add different animations based on element type
         if (element.classList.contains('video-card')) {
             this.animateVideoCard(element);
         } else if (element.classList.contains('comment-item')) {
@@ -3623,7 +3735,6 @@ class AnimationController {
     }
     
     animateVideoCard(card) {
-        // Simple fade-in animation since we don't have GSAP
         card.style.animation = 'cardAppear 0.6s ease backwards';
     }
     
@@ -3650,7 +3761,7 @@ class AnimationController {
     }
 }
 
-// =============== THEME MANAGER ===============
+// ============ THEME MANAGER (from first codebase) ============
 class ThemeManager {
     constructor() {
         this.themes = {
@@ -3741,13 +3852,11 @@ class ThemeManager {
     }
     
     init() {
-        // Load saved theme
         const savedTheme = localStorage.getItem('vibro-theme');
         if (savedTheme && this.themes[savedTheme]) {
             this.setTheme(savedTheme);
         }
         
-        // Setup theme toggle
         document.getElementById('themeToggle')?.addEventListener('click', () => this.cycleTheme());
     }
     
@@ -3757,18 +3866,12 @@ class ThemeManager {
         this.currentTheme = themeName;
         const theme = this.themes[themeName];
         
-        // Apply theme variables
         Object.keys(theme).forEach(variable => {
             document.documentElement.style.setProperty(variable, theme[variable]);
         });
         
-        // Save to localStorage
         localStorage.setItem('vibro-theme', themeName);
-        
-        // Play transition animation
         this.playThemeTransition();
-        
-        // Show notification
         showNotification(`Theme changed to ${themeName}`, 'info');
     }
     
@@ -3780,7 +3883,6 @@ class ThemeManager {
     }
     
     playThemeTransition() {
-        // Create transition overlay
         const overlay = document.createElement('div');
         overlay.style.position = 'fixed';
         overlay.style.top = '0';
@@ -3794,7 +3896,6 @@ class ThemeManager {
         
         document.body.appendChild(overlay);
         
-        // Animate overlay
         let opacity = 0;
         const fadeIn = setInterval(() => {
             opacity += 0.05;
@@ -3816,7 +3917,7 @@ class ThemeManager {
     }
 }
 
-// =============== NOTIFICATION SYSTEM ===============
+// ============ NOTIFICATION SYSTEM ============
 function showNotification(message, type = 'info', duration = 3000) {
     const notification = document.getElementById('notification');
     const iconMap = {
@@ -3833,187 +3934,108 @@ function showNotification(message, type = 'info', duration = 3000) {
     
     notification.className = `notification show ${type}`;
     
-    // Auto hide
     setTimeout(() => {
         notification.classList.remove('show');
     }, duration);
 }
 
-// =============== GLOBAL STATE ===============
-let currentUser = null;
-let currentVideo = null;
-let videosCache = [];
-let commentsCache = {};
-let displayedVideos = 0;
-let pollingInterval = null;
-let lastUpdateCheck = Date.now();
-let observer = null;
-let isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
-let lastScrollTop = 0;
-const VIDEOS_PER_PAGE = 12;
-const COMMENTS_PER_PAGE = 20;
-const POLLING_INTERVAL = 3000; // 3 seconds
+// ============ UTILITY FUNCTIONS ============
+function createParticleBurst(count, type) {
+    if (!state.particleEffects) return;
+    
+    const colors = {
+        avatar: ['var(--ex-accent)', 'var(--ex-primary)', 'var(--ex-secondary)'],
+        physics: ['var(--ex-tech-orange)', 'var(--ex-tech-yellow)', 'var(--ex-tech-red)'],
+        effect: ['var(--ex-cyberpunk-pink)', 'var(--ex-cyberpunk-blue)', 'var(--ex-cyberpunk-yellow)'],
+        cursor: ['var(--primary)', 'var(--secondary)', 'var(--accent-1)'],
+        default: ['var(--primary)', 'var(--secondary)', 'var(--accent-1)']
+    };
+    
+    const colorSet = colors[type] || colors.default;
+    
+    for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.style.position = 'fixed';
+        particle.style.left = '50%';
+        particle.style.top = '50%';
+        particle.style.width = Math.random() * 10 + 5 + 'px';
+        particle.style.height = particle.style.width;
+        particle.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+        particle.style.background = colorSet[Math.floor(Math.random() * colorSet.length)];
+        particle.style.pointerEvents = 'none';
+        particle.style.zIndex = '9996';
+        particle.style.transform = 'translate(-50%, -50%)';
+        
+        document.body.appendChild(particle);
+        
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 50 + Math.random() * 100;
+        const targetX = Math.cos(angle) * distance;
+        const targetY = Math.sin(angle) * distance;
+        
+        particle.animate([
+            { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+            { transform: `translate(calc(-50% + ${targetX}px), calc(-50% + ${targetY}px)) scale(0)`, opacity: 0 }
+        ], {
+            duration: 800 + Math.random() * 400,
+            easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
+        }).onfinish = () => particle.remove();
+    }
+}
 
-// Initialize systems
-let advancedCursor, soundEffects, animationController, themeManager;
+function saveSettings() {
+    localStorage.setItem('vibro-x-settings', JSON.stringify(state));
+    createParticleBurst(30, 'effect');
+    showNotification('Settings saved!', 'success');
+}
 
-// =============== INITIALIZATION ===============
-document.addEventListener('DOMContentLoaded', async () => {
-    // Initialize systems
-    advancedCursor = new AdvancedCursor();
-    soundEffects = new SoundEffects();
-    animationController = new AnimationController();
-    themeManager = new ThemeManager();
-    
-    // Enhanced logo click
-    document.getElementById('logoBtn').addEventListener('click', (e) => {
-        e.preventDefault();
-        animationController.pulseElement(e.target);
-        soundEffects.play('click');
-        handleHomeClick();
-    });
-    
-    // Enhanced search with animation
-    document.getElementById('searchButton').addEventListener('click', () => {
-        animationController.shakeElement(document.getElementById('searchBar'));
-        soundEffects.play('click');
-        handleSearch();
-    });
-    
-    // Enhanced upload button
-    document.getElementById('uploadBtn').addEventListener('click', () => {
-        soundEffects.play('upload');
-        document.getElementById('uploadSection').style.display = 'block';
-        document.getElementById('videosSection').style.display = 'none';
-        
-        document.querySelectorAll('.sidebar-item').forEach(item => {
-            item.classList.remove('active');
-        });
-    });
-    
-    // Mobile menu toggle
-    document.getElementById('mobileMenuToggle').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('visible');
-        soundEffects.play('click');
-    });
-    
-    // Mobile search toggle
-    document.getElementById('searchToggle').addEventListener('click', () => {
-        document.getElementById('searchBar').classList.toggle('mobile-visible');
-        soundEffects.play('click');
-    });
-    
-    // Add parallax effect to background
-    window.addEventListener('mousemove', (e) => {
-        const x = (window.innerWidth - e.pageX * 2) / 100;
-        const y = (window.innerHeight - e.pageY * 2) / 100;
-        
-        document.querySelector('.gradient-bg').style.transform = 
-            `translate(${x}px, ${y}px) rotate(${x}deg)`;
-    });
-    
-    // Add scroll effects
-    window.addEventListener('scroll', () => {
-        const scrolled = window.pageYOffset;
-        const header = document.querySelector('.header');
-        
-        if (scrolled > 50) {
-            header.classList.add('scrolled');
-        } else {
-            header.classList.remove('scrolled');
-        }
-        
-        // Parallax for floating elements
-        document.querySelectorAll('.floating-element').forEach((el, i) => {
-            const speed = 0.5 + (i * 0.1);
-            el.style.transform = `translateY(${scrolled * speed}px)`;
-        });
-    });
-    
-    // Add keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-        // Space to play/pause video
-        if (e.code === 'Space' && document.getElementById('videoModal').classList.contains('show')) {
-            e.preventDefault();
-            const video = document.getElementById('modalVideo');
-            video.paused ? video.play() : video.pause();
-            soundEffects.play('click');
-        }
-        
-        // Escape to close modals
-        if (e.code === 'Escape') {
-            if (document.getElementById('videoModal').classList.contains('show')) {
-                closeVideoModal();
-                soundEffects.play('click');
-            }
-            if (document.getElementById('uploadSection').style.display !== 'none') {
-                closeUploadModal();
-                soundEffects.play('click');
-            }
-        }
-        
-        // / to focus search
-        if (e.code === 'Slash' && !e.target.matches('input, textarea')) {
-            e.preventDefault();
-            document.getElementById('searchInput').focus();
-            soundEffects.play('hover');
-        }
-        
-        // Theme cycling with T
-        if (e.code === 'KeyT' && e.ctrlKey) {
-            e.preventDefault();
-            themeManager.cycleTheme();
-            soundEffects.play('notification');
-        }
-    });
-    
-    // Add continuous background animation
-    setInterval(() => {
-        // Random floating element pulse
-        const elements = document.querySelectorAll('.floating-element');
-        if (elements.length > 0) {
-            const randomEl = elements[Math.floor(Math.random() * elements.length)];
-            randomEl.style.animation = 'pulseEffect 2s ease-in-out';
-            setTimeout(() => {
-                randomEl.style.animation = '';
-            }, 2000);
-        }
-    }, 3000);
-    
-    // Initialize your existing functionality
-    setupEventListeners();
-    setupUploadHandlers();
-    setupTabHandlers();
-    await loadCurrentUser();
-    await loadVideos(true);
-});
+function resetSettings() {
+    if (confirm('Reset all settings to default?')) {
+        localStorage.removeItem('vibro-x-settings');
+        location.reload();
+    }
+}
 
-// =============== ORIGINAL FUNCTIONALITY (UPDATED) ===============
+function loadInitialData() {
+    const savedSettings = localStorage.getItem('vibro-x-settings');
+    if (savedSettings) {
+        Object.assign(state, JSON.parse(savedSettings));
+        
+        document.getElementById('effectsSlider').value = state.activeEffects;
+        document.getElementById('effectsValue').textContent = `${state.activeEffects}%`;
+        document.getElementById('animationSlider').value = state.animationSpeed;
+        document.getElementById('animationValue').textContent = `${state.animationSpeed}%`;
+        document.getElementById('volumeSlider').value = state.volume;
+        document.getElementById('volumeValue').textContent = `${state.volume}%`;
+        document.getElementById('avatarGlowToggle').checked = state.avatarGlow;
+        document.getElementById('avatarParticlesToggle').checked = state.avatarParticles;
+        document.getElementById('particleToggle').checked = state.particleEffects;
+        document.getElementById('bgEffectsToggle').checked = state.backgroundEffects;
+        
+        applyCursor(state.currentCursor);
+        updateEffects();
+        updateAnimationSpeed();
+    }
+}
 
-// Setup event listeners from original code
+// ============ ORIGINAL API FUNCTIONS (from first codebase) ============
+// These are the exact functions from your first codebase with API calls
+// I'll include them exactly as they were
+
 function setupEventListeners() {
     document.getElementById('userAvatar').addEventListener('click', () => {
         document.getElementById('userDropdown').classList.toggle('show');
     });
     
-    // Cancel upload
     document.getElementById('cancelUploadBtn').addEventListener('click', () => {
         closeUploadModal();
     });
     
-    // Close modal
     document.getElementById('closeModalBtn').addEventListener('click', closeVideoModal);
-    
-    // Like button
     document.getElementById('likeBtn').addEventListener('click', toggleLike);
-    
-    // Share button
     document.getElementById('shareBtn').addEventListener('click', shareVideo);
-    
-    // Comment submit
     document.getElementById('commentSubmitBtn').addEventListener('click', postComment);
     
-    // Enter key in comment input
     document.getElementById('commentInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -4021,22 +4043,12 @@ function setupEventListeners() {
         }
     });
     
-    // Load more videos
     document.getElementById('loadMoreBtn').addEventListener('click', () => loadVideos(false));
-    
-    // Load more comments
     document.getElementById('loadMoreCommentsBtn').addEventListener('click', () => loadComments(false));
-    
-    // Logout
     document.getElementById('logoutBtn').addEventListener('click', logout);
-    
-    // Login
     document.getElementById('loginBtn').addEventListener('click', () => window.location.href = '/login');
-    
-    // Settings
     document.getElementById('settingsBtn').addEventListener('click', openSettings);
     
-    // Search input enter key
     document.getElementById('searchInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -4044,7 +4056,6 @@ function setupEventListeners() {
         }
     });
     
-    // Sort changes
     document.getElementById('sortVideos').addEventListener('change', async () => {
         const activeTab = document.querySelector('.sidebar-item.active');
         let viewType = 'home';
@@ -4067,7 +4078,6 @@ function setupEventListeners() {
     
     document.getElementById('commentsSort').addEventListener('change', () => loadComments(true));
     
-    // Close modals on outside click
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.user-menu') && document.getElementById('userDropdown').classList.contains('show')) {
             document.getElementById('userDropdown').classList.remove('show');
@@ -4079,7 +4089,6 @@ function setupEventListeners() {
     });
 }
 
-// =============== HEADER SCROLL EFFECT ===============
 function initHeaderScroll() {
     let lastScroll = 0;
     const header = document.querySelector('.header');
@@ -4093,10 +4102,8 @@ function initHeaderScroll() {
         }
         
         if (currentScroll > lastScroll && !header.classList.contains('hidden')) {
-            // Scrolling down
             header.classList.add('hidden');
         } else if (currentScroll < lastScroll && header.classList.contains('hidden')) {
-            // Scrolling up
             header.classList.remove('hidden');
         }
         
@@ -4104,14 +4111,12 @@ function initHeaderScroll() {
     });
 }
 
-// =============== FIXED SEARCH FUNCTION ===============
 async function handleSearch() {
     const query = document.getElementById('searchInput').value.trim();
     
     if (query) {
         showNotification(`Searching for: ${query}`, 'info');
         soundEffects.play('notification');
-        // Clear current videos and load search results
         await loadVideos(true, query);
     } else {
         showNotification('Please enter a search term', 'info');
@@ -4119,35 +4124,24 @@ async function handleSearch() {
     }
 }
 
-// =============== FIXED HOME BUTTON ===============
 function handleHomeClick() {
     soundEffects.play('click');
     animationController.pulseElement(document.getElementById('homeBtn'));
     
-    // Hide upload section, show videos
     document.getElementById('uploadSection').style.display = 'none';
     document.getElementById('videosSection').style.display = 'block';
-    
-    // Clear search input
     document.getElementById('searchInput').value = '';
-    
-    // Reset sort to default
     document.getElementById('sortVideos').value = 'newest';
-    
-    // Reload videos
     loadVideos(true);
     
-    // Update active state
     document.querySelectorAll('.sidebar-item').forEach(item => {
         item.classList.remove('active');
     });
     document.getElementById('homeBtn').classList.add('active');
     
-    // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// =============== USER MANAGEMENT ===============
 async function loadCurrentUser() {
     try {
         const res = await fetch('/api/me', { credentials: 'include' });
@@ -4179,14 +4173,12 @@ function updateUserUI() {
         document.getElementById('logoutBtn').style.display = 'block';
         document.getElementById('loginBtn').style.display = 'none';
         
-        // Enable comment form
         document.getElementById('commentInput').placeholder = "Add a comment...";
         document.getElementById('commentSubmitBtn').disabled = false;
     } else {
         document.getElementById('logoutBtn').style.display = 'none';
         document.getElementById('loginBtn').style.display = 'block';
         
-        // Disable comment form
         document.getElementById('commentInput').placeholder = "Sign in to comment";
         document.getElementById('commentSubmitBtn').disabled = true;
     }
@@ -4213,7 +4205,6 @@ async function logout() {
     }
 }
 
-// =============== VIDEO UPLOAD ===============
 function setupUploadHandlers() {
     const uploadArea = document.getElementById('uploadArea');
     const videoFileInput = document.getElementById('videoFile');
@@ -4221,7 +4212,6 @@ function setupUploadHandlers() {
     const clearFileBtn = document.getElementById('clearFileBtn');
     const uploadForm = document.getElementById('uploadForm');
     
-    // Drag and drop
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
         uploadArea.classList.add('dragover');
@@ -4242,7 +4232,6 @@ function setupUploadHandlers() {
         }
     });
     
-    // File selection
     selectFileBtn.addEventListener('click', () => {
         videoFileInput.click();
     });
@@ -4253,7 +4242,6 @@ function setupUploadHandlers() {
         }
     });
     
-    // Clear file
     clearFileBtn.addEventListener('click', () => {
         videoFileInput.value = '';
         document.getElementById('fileInfo').style.display = 'none';
@@ -4261,7 +4249,6 @@ function setupUploadHandlers() {
         soundEffects.play('click');
     });
     
-    // Form submission
     uploadForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         await handleUpload();
@@ -4360,7 +4347,6 @@ function closeUploadModal() {
     handleHomeClick();
 }
 
-// =============== UTILITY FUNCTIONS ===============
 function formatNumber(num) {
     if (num >= 1000000) {
         return (num / 1000000).toFixed(1) + 'M';
@@ -4406,7 +4392,6 @@ function formatFileSize(bytes) {
     return bytes + ' B';
 }
 
-// =============== VIDEO LOADING & DISPLAY ===============
 async function loadVideos(reset = false, searchQuery = '') {
     const activeTab = document.querySelector('.sidebar-item.active');
     let viewType = 'home';
@@ -4444,15 +4429,10 @@ async function loadVideosForView(viewType, reset = true, searchQuery = '') {
         const sortBy = document.getElementById('sortVideos').value;
         let url = `/api/view-videos?view=${viewType}&sort=${sortBy}&limit=${VIDEOS_PER_PAGE}&offset=${displayedVideos}`;
         
-       if (searchQuery) {
-    // FIXED: Encode the search term but keep % signs as literal %
-    const encodedTerm = encodeURIComponent(searchQuery);
-    
-    // Use %25 for the % signs in the URL (since % is a special URL character)
-    // So % becomes %25 in the URL
-    url = `/api/view-videos?or=(title.ilike.%25${encodedTerm}%25,description.ilike.%25${encodedTerm}%25,users.username.ilike.%25${encodedTerm}%25)&limit=${VIDEOS_PER_PAGE}&offset=${displayedVideos}`;
-}
-        
+        if (searchQuery) {
+            const encodedTerm = encodeURIComponent(searchQuery);
+            url = `/api/view-videos?or=(title.ilike.%25${encodedTerm}%25,description.ilike.%25${encodedTerm}%25,users.username.ilike.%25${encodedTerm}%25)&limit=${VIDEOS_PER_PAGE}&offset=${displayedVideos}`;
+        }
         
         const response = await fetch(url, { credentials: 'include' });
         
@@ -4563,7 +4543,6 @@ function renderVideos(videos, reset = false) {
         const userAvatar = video.user?.avatar_url || video.user?.profile_picture || 
             `https://ui-avatars.com/api/?name=${encodeURIComponent(video.user?.username || video.user?.email || 'User')}&background=random`;
         
-        // Add AI badge if applicable
         const aiBadge = video.ai_generated ? '<span class="ai-badge"><i class="fas fa-robot"></i> AI</span>' : '';
         
         videoCard.innerHTML = `
@@ -4591,31 +4570,25 @@ function renderVideos(videos, reset = false) {
         `;
         
         videoCard.addEventListener('click', () => openVideoModal(video));
-        
-        // Add animation delay for staggered appearance
         videoCard.style.animationDelay = `${Math.random() * 0.3}s`;
         
         videosList.appendChild(videoCard);
     });
 }
 
-// =============== VIDEO MODAL ===============
 async function openVideoModal(video) {
     currentVideo = video;
     const modal = document.getElementById('videoModal');
     const player = document.getElementById('modalVideo');
     
-    // Set video player
     if (video.video_url) {
         player.src = video.video_url;
     }
     
-    // Set poster
     if (video.cover_url) {
         player.poster = video.cover_url;
     }
     
-    // Set video info
     document.getElementById('modalVideoTitle').textContent = video.title || 'Untitled Video';
     
     const uploadTime = video.uploaded_at || video.created_at;
@@ -4627,7 +4600,6 @@ async function openVideoModal(video) {
         ${aiBadge}
     `;
     
-    // Set description
     const descShort = document.getElementById('videoDescriptionShort');
     const descFull = document.getElementById('videoDescriptionFull');
     const toggleBtn = document.getElementById('descriptionToggleBtn');
@@ -4650,7 +4622,6 @@ async function openVideoModal(video) {
         toggleBtn.style.display = 'none';
     }
     
-    // Load likes
     if (currentUser) {
         updateLikeButton({
             likes: video.likes || 0,
@@ -4663,24 +4634,18 @@ async function openVideoModal(video) {
         });
     }
     
-    // Load comments from video data
     await loadComments(true, video.comments || []);
-    
-    // Load recommended videos
     await loadRecommendedVideos();
     
-    // Show modal
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';
     
-    // Play video
     player.play().catch((error) => {
         console.log('Video play failed:', error.message);
         showNotification('Click play to start video', 'info');
         soundEffects.play('notification');
     });
     
-    // Track view
     await trackView(video.id);
 }
 
@@ -4712,7 +4677,6 @@ function toggleDescription() {
     }
 }
 
-// =============== COMMENTS LOADING ===============
 async function loadComments(reset = false, videoComments = null) {
     if (!currentVideo && !videoComments) return;
     
@@ -4796,14 +4760,11 @@ function renderComments(comments, reset = false) {
             </div>
         `;
         
-        // Stagger animation
         commentDiv.style.animationDelay = `${index * 0.1}s`;
-        
         commentsList.appendChild(commentDiv);
     });
 }
 
-// =============== LIKES ===============
 async function toggleLike() {
     if (!currentVideo || !currentUser) {
         showNotification('Please sign in to like videos', 'error');
@@ -4854,7 +4815,6 @@ function updateLikeButton(data) {
     }
 }
 
-// =============== POST COMMENT ===============
 async function postComment() {
     if (!currentVideo || !currentUser) {
         showNotification('Please sign in to comment', 'error');
@@ -4885,7 +4845,6 @@ async function postComment() {
             const comment = await response.json();
             commentInput.value = '';
             
-            // Add comment to UI
             const commentsList = document.getElementById('commentsList');
             const commentDiv = document.createElement('div');
             commentDiv.className = 'comment-item';
@@ -4916,7 +4875,6 @@ async function postComment() {
             
             commentsList.insertBefore(commentDiv, commentsList.firstChild);
             
-            // Update comment count
             const commentsCount = document.getElementById('commentsCount');
             const currentCount = parseInt(commentsCount.textContent) || 0;
             commentsCount.textContent = `${formatNumber(currentCount + 1)} Comments`;
@@ -4930,7 +4888,6 @@ async function postComment() {
     }
 }
 
-// =============== LIKE COMMENT ===============
 async function likeComment(commentId, isLiked) {
     if (!currentUser) {
         showNotification('Please sign in to like comments', 'error');
@@ -4971,7 +4928,6 @@ async function likeComment(commentId, isLiked) {
     }
 }
 
-// =============== OTHER FUNCTIONS ===============
 async function loadRecommendedVideos() {
     const recommendedVideos = document.getElementById('recommendedVideos');
     recommendedVideos.innerHTML = `
@@ -5015,42 +4971,60 @@ function shareVideo() {
     }
 }
 
-// =============== TAB HANDLERS ===============
 function setupTabHandlers() {
-    // Home tab
     document.getElementById('homeBtn').addEventListener('click', (e) => {
         e.preventDefault();
         handleTabClick('homeBtn', 'home');
     });
     
-    // Trending tab
     document.getElementById('trendingBtn').addEventListener('click', (e) => {
         e.preventDefault();
         handleTabClick('trendingBtn', 'trending');
     });
     
-    // History tab
     document.getElementById('historyBtn').addEventListener('click', (e) => {
         e.preventDefault();
         handleTabClick('historyBtn', 'history');
     });
     
-    // Liked videos tab
     document.getElementById('likedBtn').addEventListener('click', (e) => {
         e.preventDefault();
         handleTabClick('likedBtn', 'liked');
     });
     
-    // Your videos tab
     document.getElementById('yourVideosBtn').addEventListener('click', (e) => {
         e.preventDefault();
         handleTabClick('yourVideosBtn', 'your-videos');
     });
     
-    // Watch later tab
     document.getElementById('watchLaterBtn').addEventListener('click', (e) => {
         e.preventDefault();
         handleTabClick('watchLaterBtn', 'watch-later');
+    });
+    
+    // Additional sidebar items from second codebase
+    document.getElementById('avatarsBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('customizationPanel').classList.add('active');
+        createParticleBurst(20, 'avatar');
+    });
+    
+    document.getElementById('effectsBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('customizationPanel').classList.add('active');
+        createParticleBurst(20, 'effect');
+    });
+    
+    document.getElementById('physicsBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('customizationPanel').classList.add('active');
+        createParticleBurst(20, 'physics');
+    });
+    
+    document.getElementById('soundBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('customizationPanel').classList.add('active');
+        playSound('click');
     });
 }
 
@@ -5058,20 +5032,15 @@ async function handleTabClick(tabId, viewType) {
     soundEffects.play('click');
     animationController.pulseElement(document.getElementById(tabId));
     
-    // Update active state
     document.querySelectorAll('.sidebar-item').forEach(item => {
         item.classList.remove('active');
     });
     document.getElementById(tabId).classList.add('active');
     
-    // Hide upload section if visible
     document.getElementById('uploadSection').style.display = 'none';
     document.getElementById('videosSection').style.display = 'block';
-    
-    // Clear search input
     document.getElementById('searchInput').value = '';
     
-    // Update page title
     const pageTitles = {
         'home': 'Recommended Videos',
         'trending': 'Trending Videos',
@@ -5083,11 +5052,9 @@ async function handleTabClick(tabId, viewType) {
     
     document.querySelector('#videosSection h2').textContent = pageTitles[viewType] || 'Videos';
     
-    // Load videos for this view
     await loadVideosForView(viewType);
 }
 
-// =============== REAL-TIME POLLING ===============
 function startRealTimePolling() {
     if (pollingInterval) clearInterval(pollingInterval);
     
@@ -5120,22 +5087,145 @@ function updateVideoStatsInUI(stats) {
     const videoElement = document.querySelector(`.video-card[data-video-id="${stats.id}"]`);
     if (!videoElement) return;
     
-    // Update views
     const viewsElement = videoElement.querySelector('.video-stats span:first-child');
     if (viewsElement && stats.views !== undefined) {
         viewsElement.textContent = `${formatNumber(stats.views)} views`;
     }
 }
 
-// Clean up on page unload
+// Clean up
 window.addEventListener('beforeunload', () => {
-    if (pollingInterval) {
-        clearInterval(pollingInterval);
-    }
-    if (observer) {
-        observer.disconnect();
+    if (pollingInterval) clearInterval(pollingInterval);
+    if (observer) observer.disconnect();
+});
+
+// Additional event listeners for combined features
+document.addEventListener('click', (e) => {
+    // Handle clicks for sound
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+        playSound('click');
     }
 });
+
+// Mobile menu toggle
+document.getElementById('mobileMenuToggle').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('visible');
+    playSound('click');
+});
+
+// Mobile search toggle
+document.getElementById('searchToggle').addEventListener('click', () => {
+    document.getElementById('searchBar').classList.toggle('mobile-visible');
+    playSound('click');
+});
+
+// Logo click
+document.getElementById('logoBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    animationController.pulseElement(e.target);
+    soundEffects.play('click');
+    handleHomeClick();
+});
+
+// Search button
+document.getElementById('searchButton').addEventListener('click', () => {
+    animationController.shakeElement(document.getElementById('searchBar'));
+    soundEffects.play('click');
+    handleSearch();
+});
+
+// Upload button
+document.getElementById('uploadBtn').addEventListener('click', () => {
+    soundEffects.play('upload');
+    document.getElementById('uploadSection').style.display = 'block';
+    document.getElementById('videosSection').style.display = 'none';
+    
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.remove('active');
+    });
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    // Space to play/pause video
+    if (e.code === 'Space' && document.getElementById('videoModal').classList.contains('show')) {
+        e.preventDefault();
+        const video = document.getElementById('modalVideo');
+        video.paused ? video.play() : video.pause();
+        soundEffects.play('click');
+    }
+    
+    // Escape to close modals
+    if (e.code === 'Escape') {
+        if (document.getElementById('videoModal').classList.contains('show')) {
+            closeVideoModal();
+            soundEffects.play('click');
+        }
+        if (document.getElementById('uploadSection').style.display !== 'none') {
+            closeUploadModal();
+            soundEffects.play('click');
+        }
+        if (document.getElementById('customizationPanel').classList.contains('active')) {
+            document.getElementById('customizationPanel').classList.remove('active');
+            soundEffects.play('click');
+        }
+    }
+    
+    // / to focus search
+    if (e.code === 'Slash' && !e.target.matches('input, textarea')) {
+        e.preventDefault();
+        document.getElementById('searchInput').focus();
+        soundEffects.play('hover');
+    }
+    
+    // Theme cycling with T
+    if (e.code === 'KeyT' && e.ctrlKey) {
+        e.preventDefault();
+        themeManager.cycleTheme();
+        soundEffects.play('notification');
+    }
+});
+
+// Add parallax effect
+window.addEventListener('mousemove', (e) => {
+    const x = (window.innerWidth - e.pageX * 2) / 100;
+    const y = (window.innerHeight - e.pageY * 2) / 100;
+    
+    document.querySelector('.gradient-bg').style.transform = 
+        `translate(${x}px, ${y}px) rotate(${x}deg)`;
+});
+
+// Add scroll effects
+window.addEventListener('scroll', () => {
+    const scrolled = window.pageYOffset;
+    const header = document.querySelector('.header');
+    
+    if (scrolled > 50) {
+        header.classList.add('scrolled');
+    } else {
+        header.classList.remove('scrolled');
+    }
+    
+    document.querySelectorAll('.floating-element').forEach((el, i) => {
+        const speed = 0.5 + (i * 0.1);
+        el.style.transform = `translateY(${scrolled * speed}px)`;
+    });
+});
+
+// Load initial settings
+loadInitialData();
+
+// Continuous background animation
+setInterval(() => {
+    const elements = document.querySelectorAll('.floating-element');
+    if (elements.length > 0) {
+        const randomEl = elements[Math.floor(Math.random() * elements.length)];
+        randomEl.style.animation = 'pulseEffect 2s ease-in-out';
+        setTimeout(() => {
+            randomEl.style.animation = '';
+        }, 2000);
+    }
+}, 3000);
 </script>
 </body>
 </html>
