@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Immersive Help Center - Vibro</title>
+    <link rel="icon" type="image/x-icon" href="/icon/vibro.ico?v=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js for 3D effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.min.js"></script>
+    
+    <style>
+        /* Reset & Global */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #b967ff;
+            --neon-pink: #ff00ff;
+            --dark-space: #0a0a1a;
+            --deep-space: #050510;
+            --star-white: #f0f8ff;
+            --hologram-green: #00ff9d;
+            --hologram-blue: #00d9ff;
+            --glow-intensity: 1;
+        }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--deep-space);
+            color: var(--star-white);
+            min-height: 100vh;
+            overflow-x: hidden;
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%2300f3ff' stroke-width='2' stroke-opacity='0.8'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%2300f3ff'/%3E%3C/svg%3E") 16 16, auto;
+        }
+        
+        /* 3D Canvas Background */
+        #spaceCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -3;
+        }
+        
+        /* Starfield Overlay */
+        .starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 243, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(185, 103, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(255, 0, 255, 0.06) 0%, transparent 50%);
+        }
+        
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        /* Nebula Layers */
+        .nebula {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            opacity: 0.4;
+            filter: blur(60px);
+            z-index: -2;
+        }
+        
+        .nebula-1 {
+            background: radial-gradient(circle at 30% 40%, var(--neon-blue) 0%, transparent 50%);
+            animation: floatNebula 40s infinite linear;
+        }
+        
+        .nebula-2 {
+            background: radial-gradient(circle at 70% 60%, var(--neon-purple) 0%, transparent 50%);
+            animation: floatNebula 60s infinite linear reverse;
+        }
+        
+        .nebula-3 {
+            background: radial-gradient(circle at 50% 20%, var(--neon-pink) 0%, transparent 50%);
+            animation: floatNebula 80s infinite linear;
+        }
+        
+        /* Main Container */
+        .main-container {
+            position: relative;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            z-index: 1;
+        }
+        
+        /* Header with Hologram Effect */
+        .hologram-header {
+            text-align: center;
+            margin-bottom: 4rem;
+            position: relative;
+            padding: 3rem 0;
+        }
+        
+        .hologram-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 4.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            margin-bottom: 1rem;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .hologram-title::before {
+            content: 'HELP CENTER';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            color: transparent;
+            -webkit-text-stroke: 1px var(--neon-blue);
+            z-index: -1;
+            filter: blur(8px);
+            animation: hologramGlitch 3s infinite;
+        }
+        
+        .hologram-subtitle {
+            font-size: 1.5rem;
+            color: var(--hologram-green);
+            text-shadow: 0 0 10px var(--hologram-green);
+            animation: subtitleFloat 4s ease-in-out infinite;
+            margin-bottom: 3rem;
+        }
+        
+        /* Interactive Grid */
+        .grid-3d {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            perspective: 1000px;
+            margin-bottom: 4rem;
+        }
+        
+        /* 3D Card */
+        .card-3d {
+            background: rgba(10, 10, 26, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 20px;
+            padding: 2.5rem;
+            transform-style: preserve-3d;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+            min-height: 300px;
+        }
+        
+        .card-3d::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple), var(--neon-pink), var(--neon-blue));
+            z-index: -1;
+            filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.6s;
+        }
+        
+        .card-3d:hover {
+            transform: translateY(-20px) rotateX(5deg) rotateY(5deg);
+            box-shadow: 
+                0 20px 40px rgba(0, 243, 255, 0.2),
+                0 0 60px rgba(185, 103, 255, 0.1);
+        }
+        
+        .card-3d:hover::before {
+            opacity: 1;
+        }
+        
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            animation: iconPulse 3s infinite;
+        }
+        
+        .card-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+        
+        .card-content {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        
+        /* Interactive Elements */
+        .hologram-button {
+            background: transparent;
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 1rem 2rem;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .hologram-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: var(--neon-blue);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+            opacity: 0.2;
+            z-index: -1;
+        }
+        
+        .hologram-button:hover {
+            background: var(--neon-blue);
+            color: var(--dark-space);
+            text-shadow: 0 0 10px white;
+            box-shadow: 0 0 30px var(--neon-blue);
+        }
+        
+        .hologram-button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        /* FAQ Section with Holographic Display */
+        .faq-hologram {
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s;
+        }
+        
+        .faq-hologram::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.1), transparent);
+            transition: left 0.6s;
+        }
+        
+        .faq-hologram:hover::before {
+            left: 100%;
+        }
+        
+        .faq-hologram:hover {
+            transform: translateX(10px);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+        
+        /* Chat Interface */
+        .holo-chat {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 400px;
+            height: 500px;
+            background: rgba(10, 10, 26, 0.95);
+            border: 1px solid var(--neon-blue);
+            border-radius: 20px;
+            z-index: 1000;
+            transform: translateY(100px) scale(0.8);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.3);
+        }
+        
+        .holo-chat.active {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+        
+        .chat-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            box-shadow: 0 0 30px var(--neon-blue);
+            animation: pulseChat 2s infinite;
+        }
+        
+        /* Audio Visualizer */
+        .audio-visualizer {
+            position: fixed;
+            bottom: 120px;
+            right: 30px;
+            width: 400px;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            z-index: 999;
+        }
+        
+        .visualizer-bars {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 80px;
+        }
+        
+        .bar {
+            width: 6px;
+            background: linear-gradient(to top, var(--neon-blue), var(--neon-purple));
+            border-radius: 3px;
+            animation: barDance 1.5s infinite ease-in-out;
+        }
+        
+        /* Particle Beam Effect */
+        .particle-beam {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        .beam {
+            position: absolute;
+            width: 2px;
+            height: 100px;
+            background: linear-gradient(to bottom, transparent, var(--neon-blue), transparent);
+            filter: blur(1px);
+            animation: beamShoot 2s linear;
+        }
+        
+        /* Progress Rings */
+        .progress-ring {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 2rem;
+        }
+        
+        .ring-circle {
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        
+        /* Voice Assistant */
+        .voice-assistant {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            z-index: 2000;
+            display: none;
+        }
+        
+        .voice-wave {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 2px solid var(--neon-blue);
+            animation: voicePulse 1.5s infinite;
+        }
+        
+        /* Animations */
+        @keyframes hologramGlitch {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(2px, -1px); }
+            60% { transform: translate(-1px, 1px); }
+            80% { transform: translate(1px, -2px); }
+        }
+        
+        @keyframes floatNebula {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(5%, 5%) rotate(90deg); }
+            50% { transform: translate(0, 10%) rotate(180deg); }
+            75% { transform: translate(-5%, 5%) rotate(270deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
+        }
+        
+        @keyframes subtitleFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes iconPulse {
+            0%, 100% { 
+                transform: scale(1);
+                text-shadow: 0 0 20px currentColor;
+            }
+            50% { 
+                transform: scale(1.1);
+                text-shadow: 0 0 40px currentColor;
+            }
+        }
+        
+        @keyframes pulseChat {
+            0%, 100% { 
+                box-shadow: 0 0 30px var(--neon-blue);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 50px var(--neon-blue), 0 0 70px var(--neon-purple);
+                transform: scale(1.05);
+            }
+        }
+        
+        @keyframes barDance {
+            0%, 100% { height: 20px; }
+            25% { height: 80px; }
+            50% { height: 40px; }
+            75% { height: 60px; }
+        }
+        
+        @keyframes beamShoot {
+            0% { 
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 0;
+            }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { 
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes voicePulse {
+            0% { 
+                width: 0; 
+                height: 0;
+                opacity: 1;
+            }
+            100% { 
+                width: 300px; 
+                height: 300px;
+                opacity: 0;
+            }
+        }
+        
+        @keyframes scanLine {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hologram-title {
+                font-size: 2.5rem;
+                letter-spacing: 0.2em;
+            }
+            
+            .grid-3d {
+                grid-template-columns: 1fr;
+            }
+            
+            .holo-chat {
+                width: calc(100% - 40px);
+                right: 20px;
+                left: 20px;
+            }
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 10, 26, 0.5);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(var(--neon-blue), var(--neon-purple));
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(var(--neon-purple), var(--neon-pink));
+        }
+    </style>
+</head>
+<body>
+    <!-- 3D Space Canvas -->
+    <canvas id="spaceCanvas"></canvas>
+    
+    <!-- Starfield & Nebula -->
+    <div class="starfield"></div>
+    <div class="stars" id="stars"></div>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+    
+    <!-- Particle Beams -->
+    <div class="particle-beam" id="particleBeam"></div>
+    
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Header -->
+        <header class="hologram-header">
+            <h1 class="hologram-title">HELP CENTER</h1>
+            <p class="hologram-subtitle">Vibro Support • Interactive Assistance • Quantum Interface</p>
+            
+            <!-- Voice Search -->
+            <div class="voice-search" style="max-width: 600px; margin: 0 auto;">
+                <div class="search-container" style="position: relative;">
+                    <input type="text" id="holoSearch" placeholder="Speak or type your question..." 
+                           style="width: 100%; padding: 1rem 2rem; background: rgba(0, 243, 255, 0.1); 
+                                  border: 2px solid var(--neon-blue); border-radius: 50px; 
+                                  color: white; font-size: 1.1rem; outline: none;">
+                    <button id="voiceBtn" class="hologram-button" 
+                            style="position: absolute; right: 5px; top: 5px; padding: 0.8rem 1.5rem;">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Grid -->
+        <div class="grid-3d">
+            <!-- Card 1 -->
+            <div class="card-3d" data-sound="card-hover.wav">
+                <div class="card-icon" style="color: var(--neon-blue);">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <h3 class="card-title">FAQ & Knowledge Base</h3>
+                <p class="card-content">
+                    Access our comprehensive knowledge base with instant answers to common questions.
+                    Includes step-by-step guides, troubleshooting, and best practices.
+                </p>
+                <button class="hologram-button" onclick="playSound('select.wav'); showSection('faq')">
+                    Explore FAQs <i class="fas fa-arrow-right" style="margin-left: 10px;"></i>
+                </button>
+            </div>
+            
+            <!-- Card 2 -->
+            <div class="card-3d" data-sound="card-hover.wav">
+                <div class="card-icon" style="color: var(--neon-purple);">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <h3 class="card-title">Live Support</h3>
+                <p class="card-content">
+                    Connect with our expert support team in real-time. Get immediate assistance 
+                    with any issues or questions through our holographic chat interface.
+                </p>
+                <button class="hologram-button" onclick="playSound('select.wav'); toggleChat()">
+                    Start Live Chat <i class="fas fa-comment" style="margin-left: 10px;"></i>
+                </button>
+            </div>
+            
+            <!-- Card 3 -->
+            <div class="card-3d" data-sound="card-hover.wav">
+                <div class="card-icon" style="color: var(--neon-pink);">
+                    <i class="fas fa-video"></i>
+                </div>
+                <h3 class="card-title">Video Tutorials</h3>
+                <p class="card-content">
+                    Watch immersive 3D tutorials that guide you through every feature. 
+                    Interactive videos with step-by-step instructions and real-time feedback.
+                </p>
+                <button class="hologram-button" onclick="playSound('select.wav'); showSection('tutorials')">
+                    Watch Tutorials <i class="fas fa-play" style="margin-left: 10px;"></i>
+                </button>
+            </div>
+            
+            <!-- Card 4 -->
+            <div class="card-3d" data-sound="card-hover.wav">
+                <div class="card-icon" style="color: var(--hologram-green);">
+                    <i class="fas fa-book"></i>
+                </div>
+                <h3 class="card-title">Documentation</h3>
+                <p class="card-content">
+                    Comprehensive technical documentation with API references, 
+                    integration guides, and developer resources in interactive format.
+                </p>
+                <button class="hologram-button" onclick="playSound('select.wav'); showSection('docs')">
+                    Read Docs <i class="fas fa-book-open" style="margin-left: 10px;"></i>
+                </button>
+            </div>
+            
+            <!-- Card 5 -->
+            <div class="card-3d" data-sound="card-hover.wav">
+                <div class="card-icon" style="color: var(--hologram-blue);">
+                    <i class="fas fa-bug"></i>
+                </div>
+                <h3 class="card-title">Report Issue</h3>
+                <p class="card-content">
+                    Submit detailed bug reports with automatic system diagnostics. 
+                    Our AI will analyze and prioritize your issue for fastest resolution.
+                </p>
+                <button class="hologram-button" onclick="playSound('select.wav'); showSection('report')">
+                    Report Problem <i class="fas fa-exclamation-triangle" style="margin-left: 10px;"></i>
+                </button>
+            </div>
+            
+            <!-- Card 6 -->
+            <div class="card-3d" data-sound="card-hover.wav">
+                <div class="card-icon" style="color: #ff6b6b;">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3 class="card-title">AI Assistant</h3>
+                <p class="card-content">
+                    Our advanced AI assistant can understand natural language and 
+                    provide personalized help through voice interaction and predictive solutions.
+                </p>
+                <button class="hologram-button" onclick="playSound('select.wav'); startVoiceAssistant()">
+                    Talk to AI <i class="fas fa-robot" style="margin-left: 10px;"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- FAQ Section -->
+        <section id="faqSection" style="display: none; margin-top: 4rem;">
+            <h2 style="font-family: 'Orbitron'; font-size: 2.5rem; margin-bottom: 2rem; color: var(--neon-blue);">
+                FREQUENTLY ASKED QUESTIONS
+            </h2>
+            <div class="faq-container">
+                <div class="faq-hologram" onclick="toggleFAQ(1)">
+                    <h4>How do I reset my password?</h4>
+                    <p class="faq-answer" style="display: none; margin-top: 1rem; color: rgba(255,255,255,0.8);">
+                        Go to Settings > Security > Reset Password. A verification code will be sent to your email.
+                    </p>
+                </div>
+                <div class="faq-hologram" onclick="toggleFAQ(2)">
+                    <h4>Is my data secure with Vibro?</h4>
+                    <p class="faq-answer" style="display: none; margin-top: 1rem; color: rgba(255,255,255,0.8);">
+                        Yes, we use military-grade encryption and follow strict security protocols.
+                    </p>
+                </div>
+                <div class="faq-hologram" onclick="toggleFAQ(3)">
+                    <h4>How can I enable two-factor authentication?</h4>
+                    <p class="faq-answer" style="display: none; margin-top: 1rem; color: rgba(255,255,255,0.8);">
+                        Navigate to Security settings and enable 2FA. You'll need an authenticator app.
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Status Display -->
+        <div class="status-display" style="margin-top: 4rem; text-align: center;">
+            <h3 style="margin-bottom: 2rem; color: var(--neon-blue);">SYSTEM STATUS</h3>
+            <div style="display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;">
+                <div class="progress-ring">
+                    <svg width="120" height="120">
+                        <circle class="ring-circle" cx="60" cy="60" r="50" stroke="rgba(0,243,255,0.3)" 
+                                stroke-width="8" fill="transparent"></circle>
+                        <circle class="ring-circle" cx="60" cy="60" r="50" stroke="var(--neon-blue)" 
+                                stroke-width="8" fill="transparent" stroke-dasharray="314" 
+                                stroke-dashoffset="94" style="filter: blur(1px);"></circle>
+                    </svg>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                                color: var(--neon-blue); font-size: 1.5rem; font-weight: bold;">70%</div>
+                    <p style="margin-top: 1rem; color: var(--neon-blue);">API Uptime</p>
+                </div>
+                <div class="progress-ring">
+                    <svg width="120" height="120">
+                        <circle class="ring-circle" cx="60" cy="60" r="50" stroke="rgba(185,103,255,0.3)" 
+                                stroke-width="8" fill="transparent"></circle>
+                        <circle class="ring-circle" cx="60" cy="60" r="50" stroke="var(--neon-purple)" 
+                                stroke-width="8" fill="transparent" stroke-dasharray="314" 
+                                stroke-dashoffset="63" style="filter: blur(1px);"></circle>
+                    </svg>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                                color: var(--neon-purple); font-size: 1.5rem; font-weight: bold;">80%</div>
+                    <p style="margin-top: 1rem; color: var(--neon-purple);">Response Time</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chat Interface -->
+    <div class="holo-chat" id="holoChat">
+        <div style="padding: 1.5rem; border-bottom: 1px solid var(--neon-blue); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="color: var(--neon-blue); margin: 0;">HOLO-CHAT SUPPORT</h3>
+            <button onclick="toggleChat()" style="background: none; border: none; color: var(--neon-blue); cursor: pointer; font-size: 1.5rem;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="chatMessages" style="height: 350px; padding: 1.5rem; overflow-y: auto;">
+            <div class="message" style="margin-bottom: 1rem; padding: 1rem; background: rgba(0,243,255,0.1); border-radius: 10px;">
+                <p style="color: var(--neon-blue); margin: 0;">AI Assistant: Hello! How can I help you today?</p>
+            </div>
+        </div>
+        <div style="padding: 1.5rem; border-top: 1px solid var(--neon-blue);">
+            <input type="text" id="chatInput" placeholder="Type your message..." 
+                   style="width: calc(100% - 80px); padding: 0.8rem; background: rgba(0,243,255,0.1); 
+                          border: 1px solid var(--neon-blue); border-radius: 10px; color: white;">
+            <button onclick="sendMessage()" style="width: 60px; padding: 0.8rem; background: var(--neon-blue); 
+                     border: none; border-radius: 10px; color: black; cursor: pointer; margin-left: 10px;">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Chat Toggle -->
+    <div class="chat-toggle" onclick="toggleChat(); playSound('chat-open.wav')">
+        <i class="fas fa-comments" style="font-size: 1.5rem; color: black;"></i>
+    </div>
+    
+    <!-- Voice Assistant -->
+    <div class="voice-assistant" id="voiceAssistant">
+        <div class="voice-wave"></div>
+        <div class="voice-wave" style="animation-delay: 0.5s;"></div>
+        <div class="voice-wave" style="animation-delay: 1s;"></div>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                    text-align: center; color: var(--neon-blue);">
+            <i class="fas fa-microphone" style="font-size: 4rem;"></i>
+            <p style="margin-top: 1rem;">Listening...</p>
+        </div>
+    </div>
+    
+    <!-- Audio Visualizer -->
+    <div class="audio-visualizer" id="visualizer">
+        <div class="visualizer-bars">
+            <div class="bar" style="animation-delay: 0s;"></div>
+            <div class="bar" style="animation-delay: 0.1s;"></div>
+            <div class="bar" style="animation-delay: 0.2s;"></div>
+            <div class="bar" style="animation-delay: 0.3s;"></div>
+            <div class="bar" style="animation-delay: 0.4s;"></div>
+            <div class="bar" style="animation-delay: 0.5s;"></div>
+            <div class="bar" style="animation-delay: 0.6s;"></div>
+            <div class="bar" style="animation-delay: 0.7s;"></div>
+        </div>
+    </div>
+    
+    <!-- Audio Context for Sound Effects -->
+    <audio id="hoverSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-hover-bubble-1102.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="clickSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="selectSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-unlock-game-notification-253.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="ambientSound" preload="auto" loop>
+        <source src="https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3" type="audio/mpeg">
+    </audio>
+    
+    <script>
+        // Initialize Audio Context
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        
+        // Sound effects object
+        const sounds = {
+            hover: document.getElementById('hoverSound'),
+            click: document.getElementById('clickSound'),
+            select: document.getElementById('selectSound'),
+            ambient: document.getElementById('ambientSound')
+        };
+        
+        // Play sound function
+        function playSound(soundName) {
+            if (sounds[soundName]) {
+                sounds[soundName].currentTime = 0;
+                sounds[soundName].play().catch(e => console.log("Audio play failed:", e));
+            }
+        }
+        
+        // Initialize 3D Space
+        let scene, camera, renderer, stars = [];
+        
+        function init3DSpace() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: document.getElementById('spaceCanvas'),
+                alpha: true,
+                antialias: true 
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            // Add stars
+            const starGeometry = new THREE.BufferGeometry();
+            const starMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.1,
+                transparent: true
+            });
+            
+            const starVertices = [];
+            for (let i = 0; i < 10000; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                starVertices.push(x, y, z);
+            }
+            
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            const starField = new THREE.Points(starGeometry, starMaterial);
+            scene.add(starField);
+            
+            // Add nebula particles
+            const particleGeometry = new THREE.BufferGeometry();
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0x00f3ff,
+                size: 0.5,
+                transparent: true,
+                opacity: 0.5
+            });
+            
+            const particleVertices = [];
+            for (let i = 0; i < 5000; i++) {
+                const x = (Math.random() - 0.5) * 1000;
+                const y = (Math.random() - 0.5) * 1000;
+                const z = (Math.random() - 0.5) * 1000;
+                particleVertices.push(x, y, z);
+            }
+            
+            particleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(particleVertices, 3));
+            const particles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particles);
+            
+            camera.position.z = 500;
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                starField.rotation.y += 0.0001;
+                particles.rotation.x += 0.00005;
+                renderer.render(scene, camera);
+            }
+            animate();
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        
+        // Create starfield
+        function createStarfield() {
+            const starsContainer = document.getElementById('stars');
+            for (let i = 0; i < 200; i++) {
+                const star = document.createElement('div');
+                star.style.position = 'absolute';
+                star.style.width = Math.random() * 3 + 'px';
+                star.style.height = star.style.width;
+                star.style.background = 'white';
+                star.style.borderRadius = '50%';
+                star.style.left = Math.random() * 100 + 'vw';
+                star.style.top = Math.random() * 100 + 'vh';
+                star.style.boxShadow = '0 0 10px white';
+                star.style.animation = `twinkle ${Math.random() * 3 + 2}s infinite`;
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        // Particle beam effects
+        function createParticleBeam() {
+            const beamContainer = document.getElementById('particleBeam');
+            setInterval(() => {
+                if (Math.random() > 0.7) {
+                    const beam = document.createElement('div');
+                    beam.className = 'beam';
+                    beam.style.left = Math.random() * 100 + 'vw';
+                    beam.style.animationDuration = Math.random() * 1 + 1 + 's';
+                    beamContainer.appendChild(beam);
+                    
+                    setTimeout(() => {
+                        beam.remove();
+                    }, 2000);
+                }
+            }, 500);
+        }
+        
+        // Card hover effects
+        function setupCardInteractions() {
+            const cards = document.querySelectorAll('.card-3d');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    playSound('hover');
+                    card.style.transform = 'translateY(-20px) rotateX(5deg) rotateY(5deg)';
+                });
+                
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    
+                    const rotateY = ((x - centerX) / centerX) * 10;
+                    const rotateX = ((centerY - y) / centerY) * 10;
+                    
+                    card.style.transform = `translateY(-20px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'translateY(0) rotateX(0) rotateY(0)';
+                });
+            });
+        }
+        
+        // Chat functionality
+        function toggleChat() {
+            const chat = document.getElementById('holoChat');
+            chat.classList.toggle('active');
+            if (chat.classList.contains('active')) {
+                playSound('select');
+            }
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (message) {
+                const chatMessages = document.getElementById('chatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                messageDiv.style.cssText = 'margin-bottom: 1rem; padding: 1rem; background: rgba(185,103,255,0.1); border-radius: 10px; text-align: right;';
+                messageDiv.innerHTML = `<p style="color: var(--neon-purple); margin: 0;">You: ${message}</p>`;
+                chatMessages.appendChild(messageDiv);
+                
+                // Simulate AI response
+                setTimeout(() => {
+                    const aiResponse = document.createElement('div');
+                    aiResponse.className = 'message';
+                    aiResponse.style.cssText = 'margin-bottom: 1rem; padding: 1rem; background: rgba(0,243,255,0.1); border-radius: 10px;';
+                    aiResponse.innerHTML = `<p style="color: var(--neon-blue); margin: 0;">AI Assistant: I understand you need help with "${message}". Let me assist you with that.</p>`;
+                    chatMessages.appendChild(aiResponse);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 1000);
+                
+                input.value = '';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+        
+        // Voice assistant
+        function startVoiceAssistant() {
+            const assistant = document.getElementById('voiceAssistant');
+            assistant.style.display = 'block';
+            playSound('select');
+            
+            setTimeout(() => {
+                assistant.style.display = 'none';
+                alert("Voice assistant activated! Please allow microphone access.");
+            }, 3000);
+        }
+        
+        // FAQ toggle
+        function toggleFAQ(index) {
+            const answers = document.querySelectorAll('.faq-answer');
+            const answer = answers[index - 1];
+            answer.style.display = answer.style.display === 'block' ? 'none' : 'block';
+            playSound('click');
+        }
+        
+        // Section navigation
+        function showSection(sectionId) {
+            const sections = ['faqSection', 'tutorials', 'docs', 'report'];
+            sections.forEach(section => {
+                const elem = document.getElementById(section);
+                if (elem) elem.style.display = 'none';
+            });
+            
+            const targetSection = document.getElementById(sectionId + 'Section');
+            if (targetSection) {
+                targetSection.style.display = 'block';
+                targetSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        
+        // Initialize audio visualizer
+        function initVisualizer() {
+            const bars = document.querySelectorAll('.bar');
+            setInterval(() => {
+                bars.forEach(bar => {
+                    const randomHeight = Math.random() * 80 + 20;
+                    bar.style.height = randomHeight + 'px';
+                });
+            }, 100);
+        }
+        
+        // Start ambient music
+        function startAmbientMusic() {
+            sounds.ambient.volume = 0.3;
+            sounds.ambient.play().catch(e => console.log("Ambient music:", e));
+        }
+        
+        // Initialize everything when page loads
+        window.addEventListener('load', () => {
+            init3DSpace();
+            createStarfield();
+            createParticleBeam();
+            setupCardInteractions();
+            initVisualizer();
+            startAmbientMusic();
+            
+            // Add CSS animation for twinkling stars
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes twinkle {
+                    0%, 100% { opacity: 0.3; }
+                    50% { opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Parallax effect on mouse move
+            document.addEventListener('mousemove', (e) => {
+                const x = (e.clientX / window.innerWidth - 0.5) * 20;
+                const y = (e.clientY / window.innerHeight - 0.5) * 20;
+                
+                document.querySelector('.hologram-header').style.transform = `translate(${x}px, ${y}px)`;
+                
+                const cards = document.querySelectorAll('.card-3d');
+                cards.forEach((card, index) => {
+                    const speed = 0.05 + (index * 0.01);
+                    card.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
+                });
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'h' || e.key === 'H') {
+                    playSound('click');
+                    document.querySelector('.hologram-title').style.color = 
+                        document.querySelector('.hologram-title').style.color === 'var(--neon-pink)' ? 
+                        'var(--neon-blue)' : 'var(--neon-pink)';
+                }
+                if (e.key === ' ') {
+                    createParticleBeam();
+                }
+                if (e.key === 'Enter' && document.activeElement.id === 'chatInput') {
+                    sendMessage();
+                }
+            });
+            
+            // Voice search
+            document.getElementById('voiceBtn').addEventListener('click', () => {
+                playSound('click');
+                startVoiceAssistant();
+            });
+            
+            // Welcome message
+            setTimeout(() => {
+                const welcomeMsg = document.createElement('div');
+                welcomeMsg.style.cssText = `
+                    position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
+                    background: rgba(0,243,255,0.2); padding: 1rem 2rem; border-radius: 10px;
+                    border: 1px solid var(--neon-blue); z-index: 1000; 
+                    animation: slideDown 0.5s ease-out;
+                `;
+                welcomeMsg.innerHTML = `<span style="color: var(--neon-blue);">✨ Welcome to the Immersive Help Center!</span>`;
+                document.body.appendChild(welcomeMsg);
+                
+                setTimeout(() => {
+                    welcomeMsg.remove();
+                }, 3000);
+            }, 1000);
+        });
+        
+        // Add more dynamic effects
+        setInterval(() => {
+            // Random hologram glitch effect
+            if (Math.random() > 0.9) {
+                document.querySelector('.hologram-title').style.textShadow = 
+                    `0 0 20px ${Math.random() > 0.5 ? 'var(--neon-pink)' : 'var(--neon-purple)'}`;
+                setTimeout(() => {
+                    document.querySelector('.hologram-title').style.textShadow = '0 0 20px var(--neon-blue)';
+                }, 100);
+            }
+            
+            // Random particle effect
+            if (Math.random() > 0.8) {
+                const particles = document.querySelectorAll('.particle');
+                particles.forEach(p => {
+                    p.style.left = Math.random() * 100 + 'vw';
+                    p.style.top = Math.random() * 100 + 'vh';
+                });
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
