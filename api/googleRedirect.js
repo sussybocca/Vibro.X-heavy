@@ -5,7 +5,7 @@ export default function handler(req, res) {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     if (!clientId) throw new Error('Missing GOOGLE_CLIENT_ID');
 
-    const redirectUri = `${process.env.SITE_URL}/api/googleCallback`; // Must match Google OAuth redirect URI
+    const redirectUri = `${process.env.SITE_URL}`; // Must match Google OAuth redirect URI
     if (!process.env.SITE_URL) throw new Error('Missing SITE_URL');
 
     // 2️⃣ OAuth scopes
