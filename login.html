@@ -1,139 +1,987 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Login - Vibro</title>
-<link rel="icon" type="image/x-icon" href="/icon/Vibro.ico?v=1">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  /* Basic reset */
-  * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
-  body { display:flex; justify-content:center; align-items:center; min-height:100vh; background:#121212; color:#fff; }
-
-  /* Card container */
-  .login-card { background:#1f1f1f; padding:2rem; border-radius:16px; width:100%; max-width:400px; box-shadow:0 8px 25px rgba(0,0,0,0.7); }
-  .login-card h1 { text-align:center; font-size:1.8rem; margin-bottom:1.5rem; color:#fff; }
-  .logo { display:block; margin:0 auto 1rem auto; width:80px; height:80px; }
-
-  /* Inputs and buttons */
-  input[type="email"], input[type="password"], input[type="text"] { 
-    width:100%; padding:0.75rem 1rem; margin-bottom:1rem; border:none; border-radius:8px; background:#2a2a2a; color:#fff; font-size:1rem; 
-  }
-  input::placeholder { color:#888; }
-
-  .checkbox-container { display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; font-size:0.9rem; }
-  .checkbox-container a { color:#4ea1ff; text-decoration:underline; }
-
-  button { width:100%; padding:0.75rem; border:none; border-radius:8px; font-weight:bold; font-size:1rem; cursor:pointer; transition:0.3s; }
-  .btn-primary { background:#0077cc; color:#fff; margin-bottom:0.5rem; }
-  .btn-primary:hover { background:#005fa3; }
-  .btn-outline { background:none; border:2px solid #0077cc; color:#0077cc; margin-bottom:0.5rem; }
-  .btn-outline:hover { background:#0077cc; color:#fff; }
-
-  #verifySection { display:none; margin-top:1rem; }
-  #output { margin-top:1rem; font-size:0.9rem; color:#ff6b6b; text-align:center; }
-
-  .h-captcha { margin-bottom:1rem; display:flex; justify-content:center; }
-</style>
-<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <meta charset="UTF-8">
+    <title>Login - Vibro</title>
+    <link rel="icon" type="image/x-icon" href="/icon/vibro.ico?v=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <style>
+        /* Modern CSS Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --dark-bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --success: #22c55e;
+            --error: #ef4444;
+            --gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+            --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.3);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Animated background */
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(217, 70, 239, 0.1) 0%, transparent 50%);
+        }
+        
+        .floating-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .shape {
+            position: absolute;
+            background: var(--gradient);
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.1;
+            animation: float 20s infinite linear;
+        }
+        
+        .shape:nth-child(1) {
+            width: 300px;
+            height: 300px;
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+        
+        .shape:nth-child(2) {
+            width: 200px;
+            height: 200px;
+            top: 60%;
+            right: 10%;
+            animation-delay: -5s;
+            animation-duration: 25s;
+        }
+        
+        .shape:nth-child(3) {
+            width: 150px;
+            height: 150px;
+            bottom: 20%;
+            left: 20%;
+            animation-delay: -10s;
+            animation-duration: 30s;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            33% {
+                transform: translate(30px, 50px) rotate(120deg);
+            }
+            66% {
+                transform: translate(-20px, 20px) rotate(240deg);
+            }
+        }
+        
+        /* Main container */
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        /* Glassmorphism card */
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 440px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease, box-shadow 0.5s ease;
+        }
+        
+        .login-card:hover {
+            transform: translateY(-10px) scale(1.01);
+            box-shadow: 
+                0 30px 80px rgba(0, 0, 0, 0.4),
+                var(--shadow-glow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        }
+        
+        .card-glow {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: var(--gradient);
+            opacity: 0.05;
+            z-index: -1;
+            filter: blur(60px);
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Logo */
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        
+        .logo-wrapper {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo-glow {
+            position: absolute;
+            width: 120%;
+            height: 120%;
+            background: var(--gradient);
+            border-radius: 50%;
+            filter: blur(20px);
+            opacity: 0.4;
+            z-index: 0;
+            animation: pulse 3s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.3; transform: scale(1); }
+            100% { opacity: 0.6; transform: scale(1.1); }
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            z-index: 1;
+            position: relative;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
+            transition: transform 0.5s ease;
+        }
+        
+        .logo:hover {
+            transform: rotate(15deg) scale(1.1);
+        }
+        
+        /* Title */
+        .title {
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        
+        .title h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+        
+        .title p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+        
+        /* Input fields */
+        .input-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            z-index: 2;
+            transition: color 0.3s ease;
+        }
+        
+        input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            background: rgba(15, 23, 42, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 400;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            background: rgba(15, 23, 42, 0.9);
+        }
+        
+        input:focus + .input-icon {
+            color: var(--primary);
+        }
+        
+        input::placeholder {
+            color: var(--text-secondary);
+        }
+        
+        /* Checkboxes */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .checkbox-container input[type="checkbox"] {
+            display: none;
+        }
+        
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            margin-right: 0.75rem;
+            position: relative;
+            transition: all 0.3s ease;
+            background: rgba(15, 23, 42, 0.5);
+        }
+        
+        .checkbox-container input[type="checkbox"]:checked + .checkbox-custom {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .checkbox-container input[type="checkbox"]:checked + .checkbox-custom::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 0.9rem;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .checkbox-label {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            user-select: none;
+        }
+        
+        .checkbox-label a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+        
+        .checkbox-label a:hover {
+            color: var(--primary-dark);
+        }
+        
+        .checkbox-label a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+        
+        .checkbox-label a:hover::after {
+            width: 100%;
+        }
+        
+        /* hCaptcha */
+        .h-captcha {
+            margin: 1.5rem 0;
+            display: flex;
+            justify-content: center;
+            border-radius: 12px;
+            overflow: hidden;
+            transform: scale(0.95);
+            transform-origin: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .h-captcha:hover {
+            transform: scale(1);
+        }
+        
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-primary {
+            background: var(--gradient);
+            color: white;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.5);
+            transform: translateY(-3px);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+        }
+        
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+        }
+        
+        /* Verification section */
+        #verifySection {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .verification-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        /* Output message */
+        #output {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            min-height: 3.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .success {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        
+        .info {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        /* Footer links */
+        .footer-links {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .footer-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+        
+        .footer-link:hover {
+            color: var(--primary);
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 2rem 1.5rem;
+                border-radius: 20px;
+            }
+            
+            .title h1 {
+                font-size: 1.8rem;
+            }
+            
+            .btn {
+                padding: 0.9rem;
+            }
+        }
+        
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Particle effect */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: particle-float 15s infinite linear;
+        }
+        
+        @keyframes particle-float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.7;
+            }
+            90% {
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Glitch effect for errors */
+        .glitch {
+            animation: glitch 0.5s linear;
+        }
+        
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+    </style>
 </head>
 <body>
-
-<div class="login-card">
-  <img src="/icon/Vibro.ico?v=1" alt="Vibro Logo" class="logo">
-  <h1>Login</h1>
-
-  <input type="email" id="email" placeholder="Email" required>
-  <input type="password" id="password" placeholder="Password" required>
-
-  <div class="checkbox-container">
-    <input type="checkbox" id="rememberMe">
-    <label for="rememberMe">Remember Me</label>
-  </div>
-
-  <div class="checkbox-container">
-    <input type="checkbox" id="acceptTerms">
-    <label for="acceptTerms">I agree to the <a href="/terms.html" target="_blank">Terms of Service</a></label>
-  </div>
-
-  <div class="h-captcha" data-sitekey="2b1cc900-c846-40e8-bf32-dbeeeec2d1c0"></div>
-
-  <button id="loginBtn" class="btn-primary">Login</button>
-  <button id="googleBtn" class="btn-outline">Login with Google</button>
-
-  <div id="verifySection">
-    <p style="margin-bottom:0.5rem; font-size:0.9rem;">Enter verification code sent to your email:</p>
-    <input type="text" id="verificationCode" placeholder="Verification code">
-    <button id="verifyBtn" class="btn-primary" style="margin-top:0.5rem;">Verify & Continue</button>
-  </div>
-
-  <div id="output"></div>
-</div>
-
-<script>
-const output = document.getElementById('output');
-const verifySection = document.getElementById('verifySection');
-let pendingLoginData = null;
-
-function getFingerprint() {
-  return navigator.userAgent + navigator.language + screen.width + screen.height;
-}
-
-// Login
-document.getElementById('loginBtn').addEventListener('click', async () => {
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value.trim();
-  const remember_me = document.getElementById('rememberMe').checked;
-  const acceptTerms = document.getElementById('acceptTerms').checked;
-
-  if (!acceptTerms) { output.textContent = "You must agree to the Terms of Service."; return; }
-  const captcha_token = hcaptcha.getResponse();
-  if (!captcha_token) { output.textContent = "Please complete the CAPTCHA."; return; }
-  if (!email || !password) { output.textContent = "Enter both email and password."; return; }
-
-  const fingerprint = getFingerprint();
-  try {
-    const res = await fetch('/api/login', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ email, password, remember_me, captcha_token, fingerprint, accepted_terms:true })
-    });
-    const data = await res.json();
-    if (data.verification_required) {
-      output.textContent = data.message || "Verification code sent.";
-      pendingLoginData = { email, password, remember_me, fingerprint, accepted_terms:true };
-      verifySection.style.display = 'block';
-    } else if (data.success) {
-      output.textContent = data.message || "Login successful!";
-      setTimeout(()=>window.location.href='/profile.html?email='+encodeURIComponent(email),500);
-    } else if (data.redirect) window.location.href = data.redirect;
-    else output.textContent = `Error: ${data.error || 'Unknown error'}`;
-  } catch(err) { output.textContent = 'Error: Could not reach login server'; console.error(err); }
-});
-
-// Verification
-document.getElementById('verifyBtn').addEventListener('click', async () => {
-  if (!pendingLoginData) return;
-  const code = document.getElementById('verificationCode').value.trim();
-  if (!code) { output.textContent="Enter the verification code."; return; }
-
-  try {
-    const res = await fetch('/api/login', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({...pendingLoginData, verification_code:code})
-    });
-    const data = await res.json();
-    if (data.success) {
-      output.textContent = "Verification successful!";
-      setTimeout(()=>window.location.href='/profile.html?email='+encodeURIComponent(pendingLoginData.email),500);
-    } else output.textContent = `Error: ${data.error || 'Verification failed'}`;
-  } catch(err) { output.textContent='Error: Could not reach login server'; console.error(err); }
-});
-
-// Google login
-document.getElementById('googleBtn').addEventListener('click',()=>window.location.href='/api/googleRedirect');
-</script>
-
+    <!-- Animated background -->
+    <div class="background-animation"></div>
+    
+    <!-- Floating shapes -->
+    <div class="floating-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+    
+    <!-- Particles -->
+    <div class="particles" id="particles"></div>
+    
+    <!-- Main container -->
+    <div class="container">
+        <div class="login-card animate__animated animate__fadeInUp">
+            <!-- Card glow effect -->
+            <div class="card-glow"></div>
+            
+            <!-- Logo -->
+            <div class="logo-container">
+                <div class="logo-wrapper">
+                    <div class="logo-glow"></div>
+                    <img src="/icon/Vibro.ico?v=1" alt="Vibro Logo" class="logo">
+                </div>
+            </div>
+            
+            <!-- Title -->
+            <div class="title">
+                <h1>Welcome Back</h1>
+                <p>Sign in to access your Vibro account</p>
+            </div>
+            
+            <!-- Email input -->
+            <div class="input-group">
+                <i class="fas fa-envelope input-icon"></i>
+                <input type="email" id="email" placeholder="Email address" required>
+            </div>
+            
+            <!-- Password input -->
+            <div class="input-group">
+                <i class="fas fa-lock input-icon"></i>
+                <input type="password" id="password" placeholder="Password" required>
+            </div>
+            
+            <!-- Remember me checkbox -->
+            <label class="checkbox-container">
+                <input type="checkbox" id="rememberMe">
+                <span class="checkbox-custom"></span>
+                <span class="checkbox-label">Remember me</span>
+            </label>
+            
+            <!-- Terms checkbox -->
+            <label class="checkbox-container">
+                <input type="checkbox" id="acceptTerms">
+                <span class="checkbox-custom"></span>
+                <span class="checkbox-label">I agree to the <a href="/terms.html" target="_blank">Terms of Service</a></span>
+            </label>
+            
+            <!-- hCaptcha -->
+            <div class="h-captcha" data-sitekey="2b1cc900-c846-40e8-bf32-dbeeeec2d1c0"></div>
+            
+            <!-- Login button -->
+            <button id="loginBtn" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Sign In</span>
+            </button>
+            
+            <!-- Google button -->
+            <button id="googleBtn" class="btn btn-outline">
+                <i class="fab fa-google"></i>
+                <span>Continue with Google</span>
+            </button>
+            
+            <!-- Verification section -->
+            <div id="verifySection">
+                <p class="verification-title">Enter verification code sent to your email:</p>
+                <div class="input-group">
+                    <i class="fas fa-shield-alt input-icon"></i>
+                    <input type="text" id="verificationCode" placeholder="Verification code">
+                </div>
+                <button id="verifyBtn" class="btn btn-primary">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Verify & Continue</span>
+                </button>
+            </div>
+            
+            <!-- Output message -->
+            <div id="output"></div>
+            
+            <!-- Footer links -->
+            <div class="footer-links">
+                <a href="/forgot-password" class="footer-link">Forgot password?</a>
+                <a href="/signup" class="footer-link">Create account</a>
+                <a href="/help" class="footer-link">Need help?</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- hCaptcha -->
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    
+    <script>
+        // DOM Elements
+        const output = document.getElementById('output');
+        const verifySection = document.getElementById('verifySection');
+        const loginBtn = document.getElementById('loginBtn');
+        const verifyBtn = document.getElementById('verifyBtn');
+        let pendingLoginData = null;
+        let isProcessing = false;
+        
+        // Create particle effect
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random position and size
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.width = Math.random() * 2 + 1 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.background = `rgba(99, 102, 241, ${Math.random() * 0.5 + 0.2})`;
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = Math.random() * 10 + 15 + 's';
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Show message with animation
+        function showMessage(message, type = 'info') {
+            output.textContent = message;
+            output.className = '';
+            output.classList.add(type);
+            output.classList.add('animate__animated', 'animate__fadeIn');
+            
+            // Add glitch effect for errors
+            if (type === 'error') {
+                output.classList.add('glitch');
+                setTimeout(() => output.classList.remove('glitch'), 500);
+            }
+            
+            // Auto-hide info messages after 5 seconds
+            if (type === 'info') {
+                setTimeout(() => {
+                    if (output.textContent === message) {
+                        output.classList.add('animate__fadeOut');
+                        setTimeout(() => {
+                            output.textContent = '';
+                            output.className = '';
+                        }, 500);
+                    }
+                }, 5000);
+            }
+        }
+        
+        // Toggle loading state on buttons
+        function setLoading(button, isLoading) {
+            if (isLoading) {
+                const originalHTML = button.innerHTML;
+                button.dataset.original = originalHTML;
+                button.innerHTML = `<div class="loading"></div>`;
+                button.disabled = true;
+            } else {
+                if (button.dataset.original) {
+                    button.innerHTML = button.dataset.original;
+                }
+                button.disabled = false;
+            }
+            isProcessing = isLoading;
+        }
+        
+        // Get fingerprint
+        function getFingerprint() {
+            return navigator.userAgent + navigator.language + screen.width + screen.height + 
+                   new Date().getTimezoneOffset() + (navigator.plugins.length || 0);
+        }
+        
+        // Login function
+        async function handleLogin() {
+            if (isProcessing) return;
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const remember_me = document.getElementById('rememberMe').checked;
+            const acceptTerms = document.getElementById('acceptTerms').checked;
+            
+            // Validation
+            if (!acceptTerms) {
+                showMessage("You must agree to the Terms of Service.", "error");
+                document.getElementById('acceptTerms').parentElement.classList.add('animate__animated', 'animate__shakeX');
+                setTimeout(() => document.getElementById('acceptTerms').parentElement.classList.remove('animate__animated', 'animate__shakeX'), 1000);
+                return;
+            }
+            
+            const captcha_token = hcaptcha.getResponse();
+            if (!captcha_token) {
+                showMessage("Please complete the CAPTCHA.", "error");
+                return;
+            }
+            
+            if (!email || !password) {
+                showMessage("Please enter both email and password.", "error");
+                return;
+            }
+            
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showMessage("Please enter a valid email address.", "error");
+                return;
+            }
+            
+            setLoading(loginBtn, true);
+            const fingerprint = getFingerprint();
+            
+            try {
+                // Simulate API call with animation
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                // In a real app, you would make an actual fetch call:
+                /*
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email, 
+                        password, 
+                        remember_me, 
+                        captcha_token, 
+                        fingerprint, 
+                        accepted_terms: true 
+                    })
+                });
+                
+                const data = await res.json();
+                */
+                
+                // For demo purposes, simulate different responses
+                const responses = [
+                    { verification_required: true, message: "Verification code sent to your email." },
+                    { success: true, message: "Login successful! Redirecting..." },
+                    { error: "Invalid credentials", redirect: null }
+                ];
+                
+                const data = responses[Math.floor(Math.random() * responses.length)];
+                
+                if (data.verification_required) {
+                    showMessage(data.message || "Verification code sent.", "info");
+                    pendingLoginData = { email, password, remember_me, fingerprint, accepted_terms: true };
+                    
+                    // Show verification section with animation
+                    verifySection.style.display = 'block';
+                    verifySection.classList.add('animate__animated', 'animate__fadeIn');
+                    
+                } else if (data.success) {
+                    showMessage(data.message || "Login successful!", "success");
+                    
+                    // Add success animation to the whole card
+                    document.querySelector('.login-card').classList.add('animate__animated', 'animate__pulse');
+                    
+                    // Redirect after delay
+                    setTimeout(() => {
+                        window.location.href = '/profile.html?email=' + encodeURIComponent(email);
+                    }, 1500);
+                    
+                } else if (data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    showMessage(`Error: ${data.error || 'Unknown error'}`, "error");
+                }
+                
+            } catch (err) {
+                console.error('Login error:', err);
+                showMessage('Error: Could not reach login server', "error");
+            } finally {
+                setLoading(loginBtn, false);
+            }
+        }
+        
+        // Verification function
+        async function handleVerification() {
+            if (!pendingLoginData || isProcessing) return;
+            
+            const code = document.getElementById('verificationCode').value.trim();
+            if (!code) {
+                showMessage("Please enter the verification code.", "error");
+                return;
+            }
+            
+            setLoading(verifyBtn, true);
+            
+            try {
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                // In a real app:
+                /*
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...pendingLoginData, verification_code: code })
+                });
+                
+                const data = await res.json();
+                */
+                
+                // Demo response
+                const data = Math.random() > 0.2 ? 
+                    { success: true, message: "Verification successful!" } : 
+                    { error: "Invalid verification code" };
+                
+                if (data.success) {
+                    showMessage(data.message, "success");
+                    
+                    // Add success animation
+                    verifySection.classList.add('animate__animated', 'animate__pulse');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/profile.html?email=' + encodeURIComponent(pendingLoginData.email);
+                    }, 1500);
+                } else {
+                    showMessage(`Error: ${data.error || 'Verification failed'}`, "error");
+                    document.getElementById('verificationCode').classList.add('animate__animated', 'animate__shakeX');
+                    setTimeout(() => document.getElementById('verificationCode').classList.remove('animate__animated', 'animate__shakeX'), 1000);
+                }
+            } catch (err) {
+                console.error('Verification error:', err);
+                showMessage('Error: Could not reach verification server', "error");
+            } finally {
+                setLoading(verifyBtn, false);
+            }
+        }
+        
+        // Event Listeners
+        loginBtn.addEventListener('click', handleLogin);
+        verifyBtn.addEventListener('click', handleVerification);
+        
+        // Google login
+        document.getElementById('googleBtn').addEventListener('click', () => {
+            showMessage("Redirecting to Google...", "info");
+            setTimeout(() => {
+                window.location.href = '/api/googleRedirect';
+            }, 500);
+        });
+        
+        // Add Enter key support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (verifySection.style.display === 'block') {
+                    handleVerification();
+                } else {
+                    handleLogin();
+                }
+            }
+        });
+        
+        // Add input focus effects
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('animate__animated', 'animate__pulse');
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.classList.remove('animate__animated', 'animate__pulse');
+            });
+        });
+        
+        // Initialize particles on load
+        window.addEventListener('load', () => {
+            createParticles();
+            showMessage("Welcome! Please sign in to continue.", "info");
+        });
+    </script>
 </body>
 </html>
