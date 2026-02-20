@@ -1,4 +1,4 @@
-// pages/api/like-video.js (WITH REAL-TIME SUPPORT)
+// pages/api/like-video.js (WITH REAL-TIME SUPPORT & COMMENT LIKES)
 import { createClient } from '@supabase/supabase-js';
 import cookie from 'cookie';
 
@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
+
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     const cookies = cookie.parse(req.headers.cookie || '');
     const sessionToken = cookies['__Host-session_secure'] || cookies.session_secure;
 
-    console.log('🔍 Like video request - Session token found:', !!sessionToken);
+    console.log('🔍 Like request - Session token found:', !!sessionToken);
 
     if (!sessionToken) {
       return res.status(401).json({ success: false, error: 'Not authenticated' });
@@ -67,31 +67,51 @@ export default async function handler(req, res) {
 
     const userEmail = user.email;
     const userId = user.id;
-    const { videoId, action } = req.body; // action: 'like' or 'unlike'
 
-    console.log('📝 Like request:', { userEmail, videoId, action });
+    // Determine target type: video or comment
+    const { videoId, commentId, action } = req.body; // action: 'like' or 'unlike'
 
-    if (!videoId || !action) {
-      return res.status(400).json({ success: false, error: 'Missing videoId or action' });
+    if (!action || (action !== 'like' && action !== 'unlike')) {
+      return res.status(400).json({ success: false, error: 'Invalid action. Use "like" or "unlike"' });
     }
 
-    // Verify video exists
-    const { data: video, error: videoError } = await supabase
-      .from('videos')
-      .select('id, user_id, title, likes_count, views')
-      .eq('id', videoId)
+    let targetType, targetId, targetTable, ownerField, titleField;
+
+    if (videoId) {
+      targetType = 'video';
+      targetId = videoId;
+      targetTable = 'videos';
+      ownerField = 'user_id';
+      titleField = 'title';
+    } else if (commentId) {
+      targetType = 'comment';
+      targetId = commentId;
+      targetTable = 'comments';
+      ownerField = 'user_id';
+      titleField = 'content'; // or whatever your comment text field is
+    } else {
+      return res.status(400).json({ success: false, error: 'Missing videoId or commentId' });
+    }
+
+    console.log(`📝 Like request: ${targetType} ${targetId}, action: ${action}, user: ${userEmail}`);
+
+    // Verify target exists and get owner info
+    const { data: target, error: targetError } = await supabase
+      .from(targetTable)
+      .select(`id, ${ownerField}, ${titleField}`)
+      .eq('id', targetId)
       .maybeSingle();
 
-    if (videoError || !video) {
-      console.error('Video error:', videoError);
-      return res.status(404).json({ success: false, error: 'Video not found' });
+    if (targetError || !target) {
+      console.error(`${targetType} error:`, targetError);
+      return res.status(404).json({ success: false, error: `${targetType} not found` });
     }
 
-    // Get video owner for notifications
-    const { data: videoOwner } = await supabase
+    // Get owner details for notifications (if different from current user)
+    const { data: targetOwner } = await supabase
       .from('users')
       .select('id, email, username')
-      .eq('id', video.user_id)
+      .eq('id', target[ownerField])
       .maybeSingle();
 
     // Check if already liked
@@ -99,8 +119,8 @@ export default async function handler(req, res) {
       .from('likes')
       .select('id')
       .eq('user_email', userEmail)
-      .eq('target_type', 'video')
-      .eq('target_id', videoId)
+      .eq('target_type', targetType)
+      .eq('target_id', targetId)
       .maybeSingle();
 
     if (checkError) {
@@ -111,17 +131,18 @@ export default async function handler(req, res) {
     const alreadyLiked = !!existingLike;
     let successMessage = '';
     let updatedLikes = 0;
-    
-    // Handle like/unlike action
+
+    // Handle like/unlike
     if (action === 'like') {
       if (alreadyLiked) {
-        updatedLikes = await getLikeCount(videoId);
-        return res.status(200).json({ 
+        updatedLikes = await getLikeCount(targetType, targetId);
+        return res.status(200).json({
           success: true,
           message: 'Already liked',
           likes: updatedLikes,
           liked: true,
-          video_id: videoId,
+          target_type: targetType,
+          target_id: targetId,
           timestamp: Date.now()
         });
       }
@@ -131,54 +152,67 @@ export default async function handler(req, res) {
         .from('likes')
         .insert({
           user_email: userEmail,
-          target_type: 'video',
-          target_id: videoId,
+          target_type: targetType,
+          target_id: targetId,
           created_at: new Date().toISOString()
         });
 
       if (insertError) {
         console.error('Insert like error:', insertError);
-        return res.status(500).json({ success: false, error: 'Failed to like video' });
+        return res.status(500).json({ success: false, error: 'Failed to like' });
       }
 
-      successMessage = 'Video liked successfully';
-      console.log('✅ Like added:', { userEmail, videoId });
+      successMessage = `${targetType} liked successfully`;
+      console.log(`✅ Like added: ${targetType} ${targetId} by ${userEmail}`);
 
-      // Send notification to video owner if not liking own video
-      if (videoOwner && videoOwner.id !== userId) {
+      // Send notification to owner if not liking own content
+      if (targetOwner && targetOwner.id !== userId) {
         try {
+          let notificationPayload = {
+            from_user_id: userId,
+            from_user_email: userEmail,
+            from_username: user.username,
+            target_type: targetType,
+            target_id: targetId,
+            message: `${user.username || 'Someone'} liked your ${targetType}`
+          };
+
+          if (targetType === 'video') {
+            notificationPayload.video_id = targetId;
+            notificationPayload.video_title = target.title;
+            notificationPayload.message = `${user.username || 'Someone'} liked your video "${target.title || 'your video'}"`;
+          } else {
+            notificationPayload.comment_id = targetId;
+            notificationPayload.comment_preview = target.content?.substring(0, 50);
+            notificationPayload.message = `${user.username || 'Someone'} liked your comment`;
+          }
+
           await supabase
             .from('notifications')
             .insert({
-              user_id: videoOwner.id,
-              type: 'video_like',
-              payload: {
-                from_user_id: userId,
-                from_user_email: userEmail,
-                from_username: user.username,
-                video_id: videoId,
-                video_title: video.title,
-                message: `${user.username || 'Someone'} liked your video "${video.title || 'your video'}"`
-              },
+              user_id: targetOwner.id,
+              type: `${targetType}_like`,
+              payload: notificationPayload,
               read: false,
               created_at: new Date().toISOString()
             });
-          console.log('📧 Notification sent to video owner');
+          console.log(`📧 Notification sent to ${targetType} owner`);
         } catch (notifError) {
           console.error('Failed to send notification:', notifError);
-          // Don't fail the whole request if notification fails
+          // Don't fail the whole request
         }
       }
 
     } else if (action === 'unlike') {
       if (!alreadyLiked) {
-        updatedLikes = await getLikeCount(videoId);
-        return res.status(200).json({ 
+        updatedLikes = await getLikeCount(targetType, targetId);
+        return res.status(200).json({
           success: true,
           message: 'Already not liked',
           likes: updatedLikes,
           liked: false,
-          video_id: videoId,
+          target_type: targetType,
+          target_id: targetId,
           timestamp: Date.now()
         });
       }
@@ -188,71 +222,68 @@ export default async function handler(req, res) {
         .from('likes')
         .delete()
         .eq('user_email', userEmail)
-        .eq('target_type', 'video')
-        .eq('target_id', videoId);
+        .eq('target_type', targetType)
+        .eq('target_id', targetId);
 
       if (deleteError) {
         console.error('Delete like error:', deleteError);
-        return res.status(500).json({ success: false, error: 'Failed to unlike video' });
+        return res.status(500).json({ success: false, error: 'Failed to unlike' });
       }
 
-      successMessage = 'Video unliked successfully';
-      console.log('❌ Like removed:', { userEmail, videoId });
-
-    } else {
-      return res.status(400).json({ success: false, error: 'Invalid action. Use "like" or "unlike"' });
+      successMessage = `${targetType} unliked successfully`;
+      console.log(`❌ Like removed: ${targetType} ${targetId} by ${userEmail}`);
     }
 
     // Get updated like count
-    updatedLikes = await getLikeCount(videoId);
-    
-    // IMPORTANT: Update video timestamp and cached likes for real-time detection
+    updatedLikes = await getLikeCount(targetType, targetId);
+
+    // Update target table's like count (if you have a likes_count column) and timestamp for real-time detection
     try {
       await supabase
-        .from('videos')
-        .update({ 
+        .from(targetTable)
+        .update({
           updated_at: new Date().toISOString(),
-          // If you've added the likes_count column via SQL:
           likes_count: updatedLikes
         })
-        .eq('id', videoId);
-      
-      console.log(`🔄 Video ${videoId} timestamp updated for real-time detection`);
+        .eq('id', targetId);
+
+      console.log(`🔄 ${targetType} ${targetId} timestamp and likes_count updated`);
     } catch (updateError) {
-      console.error('Failed to update video:', updateError);
-      // Continue anyway - the like is still recorded
+      console.error(`Failed to update ${targetType}:`, updateError);
+      // Continue anyway – the like is still recorded
     }
 
-    console.log('✅ Like operation completed successfully');
+    console.log(`✅ Like operation completed successfully for ${targetType}`);
 
     return res.status(200).json({
       success: true,
       message: successMessage,
       likes: updatedLikes,
       liked: action === 'like',
-      video_id: videoId,
+      target_type: targetType,
+      target_id: targetId,
       user_email: userEmail,
-      timestamp: Date.now() // For frontend to know when this happened
+      timestamp: Date.now()
     });
 
   } catch (err) {
-    console.error('💥 Like video API error:', err);
-    return res.status(500).json({ 
-      success: false, 
+    console.error('💥 Like API error:', err);
+    return res.status(500).json({
+      success: false,
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 }
 
-// Helper function to get like count
-async function getLikeCount(videoId) {
+// Helper function to get like count for either video or comment
+async function getLikeCount(targetType, targetId) {
   try {
     const { count, error } = await supabase
       .from('likes')
       .select('*', { count: 'exact', head: true })
-      .eq('target_type', 'video')
-      .eq('target_id', videoId);
+      .eq('target_type', targetType)
+      .eq('target_id', targetId);
 
     if (error) {
       console.error('Count error:', error);
